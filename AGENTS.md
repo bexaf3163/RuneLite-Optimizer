@@ -6,6 +6,8 @@ This is an independent project. Do not change OSRS Path or its launch flow.
 - Never change real game settings during tests. Use fixtures.
 - Read only required diagnostic fields; never export credentials, raw user configuration, process command lines, account IDs, or game logs.
 - GPU changes must be explicitly previewed and confirmed, use an allowlist, require the client closed, and preserve unrelated bytes.
+- The offline file editor always requires the client closed. The separately approved guided benchmark may use its own companion's ConfigManager API for allowlisted graphics only, with encrypted original values and profile/conflict guards. Never send gameplay inputs.
+- Never edit, rebuild, replace or publish any OSRS Path source, binaries, plugin or configuration. Its installed launcher may only be invoked unchanged. Keep all optimizer assets and state under this independent project and its own application-data folder.
 - Backups may contain sensitive configuration: encrypt them with Windows CurrentUser DPAPI, keep them out of source control, and fail closed on restore conflicts.
 - Unknown hardware/telemetry must remain unknown. Do not invent FPS, temperatures or measured performance improvements.
 - Standard GPU and 117 HD settings are different. Do not disable plugins or change OSRS Path settings.

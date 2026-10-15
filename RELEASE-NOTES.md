@@ -1,12 +1,11 @@
-# RuneLite Optimizer 0.3.0
+# RuneLite Optimizer 0.4.0 — guided benchmark test release
 
-Download **RuneLite-Optimizer.exe** directly. No ZIP, installer or adjacent dependencies are needed; Windows 10/11 x64 and .NET Framework 4.8 are required.
+Download RuneLite-Optimizer.exe directly. No archive or installer required.
 
-- Refined minimalist dark dashboard: rounded cards, single capture toggle, compact scene selection and collapsed advanced controls.
-- All runtime components, 100-setting HD catalogue, manuals and third-party licenses embedded in one EXE. PresentMon extracts to the user's runtime cache when required.
-- Automatic startup checks and background downloads from this repository's stable GitHub releases. Exact asset/source, size, SHA-256 digest and executable version checked.
-- User chooses when to restart/install. Separate helper replaces only the matching old EXE; immediate launch failure restores it. Game remains running.
-- Automatic checking can be disabled; manual check remains available. Offline failures do not block the app.
-- Verified on isolated fixtures: original safety/telemetry tests, single-EXE execution from an empty folder, four-page UI renders, helper replacement/restart and failed-launch rollback.
+- Independent guided benchmark: instructions for Lumbridge, Varrock, Grand Exchange and Falador, with automatic detection of location, camera movement and walking.
+- Separate optional telemetry companion; OSRS Path source, binaries and plugin remain unchanged. Select its installed/unpacked EXE for the compatible launch flow.
+- Preview and approve graphics changes before baseline, optimized and final 60 FPS passes. Original graphics values are encrypted; restoration checks the current profile.
+- Compact external instruction overlay; no automated gameplay, camera input, clicks or teleports.
+- Existing manual capture, graphics editor and verified portable updates remain available.
 
-Versions 0.1/0.2 need this EXE downloaded once manually; later updates are offered in the app. Files are not yet publisher-signed. ETW access still requires suitable Windows permissions; real RuneLite FPS improvement has not been established by these packaging tests.
+TEST STATUS: local build, isolated companion authorization/allowlist checks, existing safety and telemetry tests, five-page UI renders, single-EXE execution and updater rollback tests passed. A complete live-game benchmark and launch compatibility with your installed OSRS Path have NOT yet been verified. This release is published for user testing; 60 FPS is a target, not a guarantee. Frame capture requires ETW permission. Unsupported launchers or missing telemetry are reported rather than treated as valid measurements.

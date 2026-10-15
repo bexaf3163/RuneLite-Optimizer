@@ -84,6 +84,7 @@ namespace RuneLiteOptimizer
         readonly Dictionary<string,int> chains=new Dictionary<string,int>();double lastTime;
         public bool Truncated;
         public double LastTime {get{lock(gate)return lastTime;}}
+        public double StoredSpan {get{lock(gate)return frames.Count<2?0:lastTime-frames[0].Time;}}
         public void Add(Frame f) {lock(gate) {if(frames.Count>=1000000) {Truncated=true;return;}frames.Add(f);lastTime=Math.Max(lastTime,f.Time);int count;chains.TryGetValue(f.Chain,out count);chains[f.Chain]=count+1;}}
         public Frame[] All() {lock(gate)return frames.ToArray();}
         public string[] Chains() {lock(gate)return chains.OrderByDescending(g=>g.Value).Select(g=>g.Key).ToArray();}

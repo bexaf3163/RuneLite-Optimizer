@@ -288,7 +288,7 @@ namespace RuneLiteOptimizer
             System.Threading.Thread.Sleep(1000);
             var after = Clients();
             double elapsed = stopwatch.Elapsed.TotalMilliseconds;
-            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.3.0", "",
+            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.4.0", "",
                 "Windows: " + Environment.OSVersion.VersionString, "CPU: " + cpu.Trim(), "Логических процессоров: " + Environment.ProcessorCount,
                 "Оперативная память: " + ram, "Видеоадаптер: " + gpu,
                 "Драйвер GPU: " + Query("SELECT DriverVersion FROM Win32_VideoController", "DriverVersion"), "",
@@ -327,7 +327,7 @@ namespace RuneLiteOptimizer
             if (args.Contains("--update-download-test")){var check=new Updates();check.Check("0.0.0").GetAwaiter().GetResult();File.WriteAllText("update-download-result.txt",check.Status);return check.Ready?0:1;}
             if (args.Contains("--self-test"))
             {
-                try { SelfTest.Run(); TelemetryTests.Run(); Updates.Tests(); return 0; } catch (Exception e) { File.WriteAllText("self-test-failure.txt", e.ToString()); return 1; }
+                try { SelfTest.Run(); TelemetryTests.Run(); Updates.Tests(); GuidedBenchmark.Tests(); return 0; } catch (Exception e) { File.WriteAllText("self-test-failure.txt", e.ToString()); return 1; }
             }
             if (args.Contains("--diagnose"))
             {
