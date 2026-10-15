@@ -4,3 +4,5 @@ test-results/
 *.tmp
 *.zip
 self-test-*.txt
+
+tools/PresentMon.exe

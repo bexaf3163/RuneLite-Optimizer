@@ -1,0 +1,101 @@
+Key	Name	Type	Description
+hd.drawDistance	Draw distance	int	The number of tiles to draw in either direction from the camera, up to a maximum of 184. Depending on where the scene is centered, you might only see 16 tiles in one direction, unless you extend map loading.
+hd.detailDistance	Detail distance	int	The number of tiles to draw animated models in either direction from the camera, up to a maximum of 184. Reducing this can help with performance, particularly in crowded sailing areas.
+hd.expandedMapLoadingChunks	Extended map loading	int	How much further the map should be loaded. The maximum is 5 extra chunks. Note: extending the map can have a very high impact on performance.
+hd.hideUnrelatedAreas	Hide unrelated areas	boolean	Hide unrelated areas which you shouldn't see from your current position.
+hd.antiAliasingMode	Anti-aliasing	AntiAliasingMode	Improves pixelated edges at the cost of significantly higher GPU usage. MSAA x16 is very expensive, so x8 is recommended if anti-aliasing is desired.
+hd.sceneResolutionScale	Game resolution	int	Render the game at a different resolution and stretch it to fit the screen. Reducing this can improve performance, particularly on very high-resolution displays.
+hd.sceneScalingMode	Game scaling mode	SceneScalingMode	The sampling function to use when upscaling the above reduced game resolution.
+hd.uiScalingMode	UI scaling mode	UIScalingMode	The sampling function to use when the Stretched Mode plugin is enabled. Affects how the UI looks with non-integer scaling.
+hd.anisotropicFilteringLevel	Anisotropic filtering	int	Configures whether mipmapping and anisotropic filtering should be used. At zero, mipmapping is disabled and textures look the most pixelated. At 1 through 16, mipmapping is enabled, and textures look more blurry and smoothed out. The higher you go beyond 1, the less blurry textures will look, to a certain extent.
+hd.normalMapping	Normal mapping	boolean	Affects how light interacts with certain materials. Barely impacts performance.
+hd.parallaxOcclusionMappingToggle	Parallax occlusion mapping	boolean	Adds more depth to some materials, at the cost of higher GPU usage.
+hd.unlockFps	Unlock FPS	boolean	Removes the 50 FPS cap for some game content, such as camera movement and dynamic lighting.
+hd.vsyncMode	VSync mode	SyncMode	Controls whether the frame rate should be synchronized with your monitor's refresh rate. If set to 'off', the FPS target option will be used instead. If set to 'adaptive', FPS will be limited to your monitor's refresh rate, which saves power. If set to 'on', the game will attempt to match your monitor's refresh rate exactly , but if it can't keep up, FPS will be halved until it catches up . This option is rarely desired. Note: GPUs that don't support Adaptive VSync will silently fall back to 'on'.
+hd.fpsTarget	FPS target	int	Controls the maximum number of frames per second. This setting only applies if Unlock FPS is enabled and VSync mode is set to 'off'.
+hd.colorBlindMode	Color blindness	ColorBlindMode	Adjust colors to make them more distinguishable for people with a certain type of color blindness.
+hd.colorBlindnessIntensity	Blindness intensity	int	Specifies how intense the color blindness adjustment should be.
+hd.fSaturation	Saturation	int	Controls the saturation of the final rendered image. Intended to be kept between 0% and 120%.
+hd.fContrast	Contrast	int	Controls the contrast of the final rendered image. Intended to be kept between 90% and 110%.
+hd.screenBrightness	Brightness	int	Controls the brightness of the game, excluding the UI. Adjust until the circle on the left is barely visible.
+hd.shadowMode	Shadow mode	ShadowMode	Render fully dynamic shadows. 'Off' completely disables shadows. 'Fast' enables fast shadows without any texture detail. 'Detailed' enables shadows with support for texture detail.
+hd.shadowResolution	Shadow quality	ShadowResolution	The resolution of the shadow map. Higher resolutions result in higher quality shadows, at the cost of higher GPU usage.
+hd.shadowFiltering	Shadow filtering	ShadowFiltering	Filtering technique used when smoothing the edges of shadows. 'Smooth low' smooths the shadow pixels evenly (PCF 2x2). 'Smooth high' smooths the shadow pixels evenly (PCF 3x3). 'Dithered low' smooths out pixelation using dithering. 'Dithered high' smooths out pixelation using dithering (PCF 2x2). 'Pixelated' retains slightly pixelated shadow edges. 'Soft shadows' produces realistically soft shadows, at the cost of performance.
+hd.enableShadowTransparency	Shadow transparency	boolean	Enable partial support for taking model transparency into account.
+hd.experimentalRoofShadows	Roof shadows	boolean	Always cast shadows from roofs, even when they are hidden.
+hd.terrainShadows	Terrain shadows	boolean	Allow terrain to cast shadows. May cause visual artifacts on slopes.
+hd.expandShadowDraw	Remove shadow pop-in	boolean	Render a potentially much larger part of the scene, to avoid shadows popping in and out based on what the camera currently sees. May significantly impact performance.
+hd.vanillaShadowMode	Vanilla shadows	VanillaShadowMode	Choose whether shadows built into models by Jagex should be hidden. This does not affect clickboxes. 'Show in PvM' will retain shadows for falling crystals during the Olm fight and other useful cases. 'Prefer in PvM' will do the above and also disable 117 HD's dynamic shadows in such cases.
+hd.dynamicLights	Lights	DynamicLights	The maximum number of dynamic lights visible at once. Reducing this may improve performance.
+hd.objectLights	Object lights	boolean	Adds dynamic lights to objects, such as lamps and fires.
+hd.npcLights	NPC lights	boolean	Adds dynamic lights to some NPCs, excluding pets and followers.
+hd.petLights	Pet lights	boolean	Adds dynamic lights to pets and followers.
+hd.spotanimLights	Animation lights	boolean	Adds dynamic lights to spells and other graphical effects.
+hd.projectileLights	Projectile lights	boolean	Adds dynamic lights to some projectiles.
+hd.waterSpecularReflection	Water sun & moon reflections	boolean	Enables sun and moon highlights on water, including the fake sun when day & night is disabled.
+hd.underwaterCaustics	Underwater caustics	boolean	Apply underwater lighting effects to imitate sunlight passing through waves on the surface.
+hd.daylightCycle	Cycle mode	DaylightCycle	Controls the day & night cycle behavior. 'Off' disables the day & night cycle entirely. 'Default' shows everyone the same sky, with one complete day passing per hour. 'Real-time' follows your local time, roughly matching the real sun in your hemisphere. 'Custom' follows the sun and moon at the configured location, respecting the Custom cycle duration. 'Dawn' shows the sky just before sunrise. 'Sunrise' shows a constant sunrise. 'Day' shows constant daytime. 'Sunset' shows a constant sunset. 'Dusk' shows the sky just after sunset. 'Night' shows constant night-time.
+hd.nightBrightness	Night brightness	int	Simulates your eyes adapting to darkness by brightening night-time lighting. '0%' disables night brightness adaptation entirely. '100%' yields good visibility at night. Values above 100% amplify the adjustment further, if needed.
+hd.stars	Stars	StarMode	'Off' hides stars. 'Realistic' follows the sky's celestial rotation. 'Artistic' rotates horizontally with slight parallax. 'Static' keeps the realistic star field fixed in place.
+hd.nebulae	Nebulae	boolean	Show clouds of cosmic dust and gas in the night sky.
+hd.moonBehavior	Moon behavior	MoonBehavior	Controls how the moon moves across the sky. 'Disabled' hides the moon, keeping half-moon illumination for scene lighting. 'Realistic orbit' makes the moon orbit naturally, independent of the sun. 'Mirror the sun' keeps the moon opposite the sun. 'Static' keeps the moon at a fixed point in the sky.
+hd.moonPhase	Moon phase	MoonPhase	Controls the portion of the moon which is lit by the sun. 'Dynamic' lights up the moon based on its position relative to the sun. All other options lock the moon in a particular lunar phase.
+hd.replaceVanillaSkyboxes	Replace vanilla skyboxes	boolean	Replace the game's built-in skybox models with 117 HD's own implementation.
+hd.customCycleDurationMinutes	Custom cycle duration	int	Configures how long each Custom day & night cycle lasts.
+hd.latitudeDegrees	Real-time latitude	int	 Advanced setting : Change the latitude coordinate for realistic sun and moon movement for a location on Earth. Only applies to Real-time and Custom cycle modes. Defaults to New York City. For southern latitudes, use negative values. For more precise timing, you can provide coordinates including decimals in the in-game chat with: ::117hd latlon &lt;latitude&gt; &lt;longitude&gt; To return to using the values specified in the config panel, type: ::117hd latlon reset 
+hd.longitudeDegrees	Real-time longitude	int	 Advanced setting : Change the longitude coordinate for realistic sun and moon movement for a location on Earth. Only applies to Real-time and Custom cycle modes. Defaults to New York City. For western longitudes, use negative values. For more precise timing, you can provide coordinates including decimals in the in-game chat with: ::117hd latlon &lt;latitude&gt; &lt;longitude&gt; To return to using the values specified in the config panel, type: ::117hd latlon reset 
+hd.seasonalTheme	Seasonal theme	SeasonalTheme	Festive themes for Gielinor.
+hd.seasonalHemisphere	Seasonal hemisphere	SeasonalHemisphere	Determines which hemisphere the 'Automatic' seasonal theme should consider.
+hd.seasonalFoliage	Seasonal foliage	boolean	Allow seasonal themes to change the color of tree leaves.
+hd.fogDepthMode	Fog depth mode	FogDepthMode	Determines how the fog amount is controlled. 'Dynamic' changes fog depth based on the area, while 'Static' respects the manually defined fog depth.
+hd.fogDepth	Static fog depth	int	Specify how far from the edge fog should reach. This applies only when 'Fog depth mode' is set to 'Static'.
+hd.groundFog	Ground fog	boolean	Enables a height-based fog effect that covers the ground in certain areas.
+hd.defaultSkyColor	Default sky	DefaultSkyColor	Specify a sky color to use when the current area doesn't have a sky color defined. This only applies when the default summer seasonal theme is active. If set to 'RuneLite Skybox', the sky color from RuneLite's Skybox plugin will be used. If set to 'Old School Black', the sky will be black and water will remain blue, but for any other option, the water color will be influenced by the sky color.
+hd.overrideSky	Override sky color	boolean	Forces the default sky color to be used in all environments.
+hd.objectTextures	Model textures	boolean	Adds new textures to most models. If disabled, the standard game textures will be used instead.
+hd.groundTextures	Ground textures	boolean	Adds new textures to most ground tiles.
+hd.textureResolution	Texture resolution	TextureResolution	Controls the resolution used for all in-game textures.
+hd.groundBlendingv2	Ground blending	GroundBlending	Controls whether ground tiles should blend into each other, or have distinct edges. When set to 'Textures only', textures may blend between tiles, but not their colors.
+hd.windDisplacement	Wind displacement	boolean	Controls whether things like grass and leaves should be affected by wind.
+hd.characterDisplacement	Character displacement	boolean	Let players & NPCs affect things like grass whilst walking around.
+hd.hideVanillaWaterEffects	Hide vanilla water ripples	boolean	Hide vanilla ripples found around objects floating in the water.
+hd.pohThemeEnvironments	Player-owned house themes	boolean	Change the environmental lighting based on the POH style.
+hd.cpuUsageLimit	CPU usage	CpuUsageLimit	Specify how much of your processor the plugin should be allowed to use. If you play with multiple clients or use other heavy programs on the side, reducing this may improve their performance. Defaults to Max, allowing the processor to be fully utilized.
+hd.powerSaving	Reduce CPU when unfocused	boolean	Automatically reduce CPU load when the game has not been in focus for 15 seconds.
+hd.infernalCape	Infernal cape	InfernalCape	Replace the infernal cape texture with a more detailed version. Note: with Anisotropic filtering above zero, the cape may look blurry when zoomed out.
+hd.vanillaColorBanding	Vanilla color banding	boolean	Blend between colors similarly to how it works in vanilla, with clearly defined bands of color. This isn't really noticeable on textured surfaces, and is intended to be used without ground textures.
+hd.lowMemoryMode	Low memory mode	boolean	Turns off features which require extra memory, such as model caching, faster scene loading & extended scene loading.
+hd.colorFilter	Color filter	ColorFilter	Apply a color filter to the game as a post-processing effect.
+hd.removeVertexSnapping	Remove vertex snapping	boolean	Removes vertex snapping from most animations. Most animations are barely affected by this, and it only has an effect if the animation smoothing plugin is turned off. To see quite clearly what impact this option has, a good example is the godsword idle animation.
+hd.fillGapsInTerrain	Fill gaps in terrain	boolean	Attempt to patch all holes in the ground, such as around trapdoors and ladders.
+hd.flatShading	Flat shading	boolean	Gives a more low-poly look to the game.
+hd.glareIntensity	Glare intensity	int	Reduce the glow around the sun & moon and their bright water reflections.
+hd.experimentalZoneStreaming	Zone streaming	boolean	Load zones in parallel in the background, switching to new scenes almost instantly. You will see zones appear when they are loaded, instead of having to wait for them all at once.
+hd.wireframe	Wireframe	boolean	Show the edges of individual triangles in the scene.
+hd.legacyRenderer2	Use legacy renderer	boolean	The new renderer is required for sailing content, and generally performs better than the legacy renderer.
+hd.useLegacyBrightness	Use legacy brightness	boolean	Whether the legacy brightness option below should be applied. We recommend leaving this disabled.
+hd.brightness2	Legacy brightness	int	Controls the strength of the sun and ambient lighting. A brightness value of 20 is the default.
+hd.shadowDistance	Legacy shadow distance	ShadowDistance	The maximum draw distance for shadows. Shorter distances result in higher quality shadows.
+hd.useModelBatching	Legacy model batching	boolean	With the legacy renderer, model batching improves performance by reusing identical models within the same frame. May cause instability and graphical bugs, particularly if Jagex makes engine changes.
+hd.useModelCaching	Legacy model caching	boolean	With the legacy renderer, model caching improves performance by saving and reusing model data from previous frames. May cause instability or graphical bugs, particularly if Jagex makes engine changes.
+hd.modelCacheSizeMiBv2	Legacy cache size	int	Size of the model cache in mebibytes (slightly more than megabytes). Generally, 512 MiB is plenty, with diminishing returns the higher you go. Minimum=64 MiB, maximum=16384 MiB
+hd.reduceOverExposure	Legacy gray colors	boolean	Previously, HD attempted to reduce overexposure by capping the maximum color brightness, which changed white colors into dull shades of gray. This option brings back that old behavior.
+hd.legacyTobEnvironment	Legacy Theatre of Blood	boolean	Previously, Theatre of Blood used to look a whole lot more blue, which some people grew really used to. This option brings back that same old look.
+hd.tzhaarHD	Legacy TzHaar city reskin	boolean	Recolors the TzHaar city of Mor Ul Rek to give it an appearance similar to that of its 2008 HD variant.
+hd.legacyBoatSilhouettes	Legacy boat silhouettes	boolean	Renders boat silhouettes with textures like before.
+hd.legacyDisableEnvironmentalLighting	Disable environmental lighting	boolean	Disable lighting tuned per environment, falling back to bright sunlight everywhere.
+hd.legacyLightning	Legacy lightning	boolean	Crudely simulates lightning in areas such as Barrows and deep Wilderness.
+hd.experimentalPreserveVanillaNormals	Preserve vanilla normals	boolean	Originally, 117 HD would respect vanilla normals, but these are often less accurate.
+hd.experimentalShadingMode	Shading mode	ShadingMode	If you prefer playing without shadows, maybe you'll prefer vanilla shading or no shading as well. Keep in mind, with vanilla shading used alongside shadows, you can end up with double shading.
+hd.experimentalDecoupleWaterFromSkyColor	Decouple water from sky color	boolean	Some people prefer the water staying blue even with a different sky color active.
+hd.experimentalSimpleBoatSilhouettes	Simple boat silhouettes	boolean	Skip rendering animated objects when boats are flattened beneath other boats.
+hd.experimentalNightAdaptationEverywhere	Night adaptation everywhere	boolean	Apply Day & night's 'Night brightness' adaptation to all dark scenes.
+hd.tiledLighting	Tiled lighting	DefaultBoolean	Allows rendering a lot more lights simultaneously. Disabled by default on older Intel GPUs.
+hd.experimentalTiledLightingImageStore	Image load store	DefaultBoolean	If you experience any issues with tiled lighting, disabling this might help.
+hd.experimentalIndirectDraw	Indirect draw	DefaultBoolean	Indirect draw is currently only enabled automatically for Nvidia GPUs. Enabling this might improve performance, if it is supported by your system.
+hd.experimentalStorageBuffers	Storage buffers	DefaultBoolean	Storage buffers may improve performance, but may also cause graphical artifacts on some hardware. By default, we disable this automatically for Intel GPUs, since older ones can be problematic.
+hd.pointSprites	Point sprites	DefaultBoolean	Controls whether GL_POINT_SPRITE should be used. The fallback uses instanced triangles.
+hd.asyncModelProcessing	Multithreaded model processing	boolean	Process multiple models in parallel to improve performance for animated models.
+hd.windowsHdrCorrection	Windows HDR correction	boolean	Correctly simulates SDR gamma 2.2 when Windows is in HDR mode. Note: this does not enable HDR. It only works around an issue within Windows' HDR implementation.
+hd.macosIntelWorkaround	Intel-based Mac workaround	boolean	Workaround for visual artifacts found on some Intel GPU drivers on macOS.
+hd.centroidQualifier	Centroid qualifier	DefaultBoolean	Prevents artifacts when MSAA is enabled.

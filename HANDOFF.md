@@ -1,30 +1,41 @@
-# Handoff — 0.1.0
+# Handoff — 0.2.0 — 2026-10-15
 
-Independent Windows WinForms/.NET Framework utility, built with the Windows csc compiler. No OSRS Path source or installation was edited.
+Independent from OSRS Path. No changes to its repo, launcher, plugin or user settings.
 
 ## Implemented
 
-- Asynchronous diagnostic report: CPU, RAM with native fallback, display adapter with Display API fallback, WMI driver version if accessible, approximately one-second RuneLite process CPU/memory snapshot.
-- Standard GPU-only presets; seven-key allowlist, user-selected properties file and explicit confirmation.
-- Client/Java offline guard, stale-preview guard, encrypted CurrentUser DPAPI original, atomic replacement, exact-hash restore conflict rejection.
-- Manual entered-FPS comparison, no claim of automatic game telemetry.
-- Russian dark UI with three tabs and scrolling for smaller profile views.
-- GitHub Actions build/test/artifact/release workflow. Releases use VERSION, never overwrite an existing release.
+- Replaced old manual-FPS tabs with dark session/settings/system navigation, draggable/resizable window chrome. Capture details and full HD editor collapse by default.
+- Pinned/hash-verified PresentMon 2.6.0: exact PID, unique session, cleanup targets only this instance's ETW session. No DLL injection or game launch changes.
+- Present interval FPS, mean-worst-1% FPS, p50/p95/p99, budget share, long interval counts, no outlier trimming, separate swap chains, QPC-aligned focus history sampled every 100ms, no-data state, 1M frame limit, sanitized export.
+- Auto attach, manual PID, stop disables auto attach; new game process starts a new session. Manual scene/uncapped declarations; minimum 120-second baseline and comparison. Swap-chain addresses may change on game restart.
+- GPU/HD 60 and 999-FPS profiles; all 100 visible HD fields searchable/editable with immutable generated bool/enum/range rules. Hidden/migration fields excluded. Source pin documented in notices.
+- Offline-only byte-preserving changes, encrypted DPAPI backup, stale-preview guard and conflict-safe restore retained. No renderer activation flags written.
 
-## Local verification (October 15, 2026)
+## Verified locally
 
-- Windows compiler build succeeded.
-- 23 checks passed, including full apply/restore against isolated synthetic files, restore/stale-preview conflict preservation, UTF-8/unrelated byte preservation, duplicate keys, idempotence, rejected complex properties syntax, DPAPI/metadata roundtrip and exclusion of the optimizer itself from game detection.
-- Rendered all three tabs at 1080x790 and 800x620. This is an offscreen rendering smoke check, not a full live interactive walkthrough or all-DPI validation.
-- Runtime diagnosis succeeded. CPU, native RAM fallback and display-adapter fallback were available; WMI was unavailable in the execution environment. No detected live RuneLite client, so no in-game FPS comparison or active-account setting persistence is claimed.
-- No real RuneLite configuration, OSRS Path data, driver, registry value, service, process priority or network tuning was changed.
+- Build, original 23 safety checks and isolated apply/restore transactions passed.
+- Deterministic telemetry tests passed: quoted CSV, actual legacy header casing, QPC, PID isolation, exact statistics, invalid values, stalls, focus crossings, all 100 HD fields, enum/range boundaries.
+- UI navigation retains declarations. Sufficient baseline accepted, empty candidate rejected. 100 HD controls. Top/bottom and expanded catalogue renders at 1120x840 and 800x660 inspected.
+- Official PresentMon hash verified; --help confirms flags. Source CsvOutput.cpp at v2.6.0 confirms legacy casing, TimeInSeconds and QPCTime columns.
+- One-second ETW probe failed **Access denied** under current user. No automatic elevation attempted. This is not a successful live FPS test.
+- Hardware: i5-1135G7, Intel Iris Xe, 15.8 GB RAM. WMI unavailable in execution context; native fallback used. No RuneLite client found in current diagnostic.
 
-## Important limitations
+## Not verified / not claimed
 
-No automatic FPS/frametime, GPU load, thermal, VRAM, OpenGL capability or monitor refresh-rate telemetry. No causal bottleneck classification. GPU target is a cap/goal, not a guaranteed result. HD is not configured. File selection is manual; active/cloud profile may overwrite local settings, so the user must verify values in the client after launch.
+- Live RuneLite/OpenGL capture and correct game swap chain; actual cap state; HD installation/runtime version; profile persistence through account sync.
+- No city walkthrough, FPS improvement or stable-60 guarantee. Scene/world/player count/camera/resolution are not read automatically.
+- No GPU load/temperature/VRAM, display latency, network telemetry or proven CPU/GPU bottleneck.
+- Focus has 100ms resolution; sub-100ms transitions may be missed. QPC joins prevent buffered frames being classified only by receive-time focus.
+- Reports require explicit export before exit. Baseline remains in memory. HD schema is a pinned source snapshot, not inferred installed-version metadata.
 
-Properties parsing is deliberately conservative: unsupported continuations/escaped names/mixed endings fail closed. Restoring refuses any intervening file changes, including unrelated changes. Hidden Java clients can be ambiguous; writes also refuse any java/javaw processes. Backups remain encrypted on the same Windows account; do not publish them.
+## Next live verification
 
-## Next useful work
+Obtain normal ETW permission or explicitly start optimizer as administrator. Launch RuneLite through the user's normal OSRS Path workflow. Identify actual game swap chain. Run identical 120-second GE/Varrock/Falador/Lumbridge scenes at 999 and 60. Check stop/reconnect/background/loading, profile persistence in each renderer, and safe rollback. Record real measurements before claiming gains.
 
-Validated profile detection and client-specific integration, optional explicit HD profiles from verified source, actual FPS/frametime telemetry via a supported companion integration, live button/file-picker and display-scaling QA, and measured same-scene before/after comparison. Do not add generic registry cleaners or unsupported performance promises.
+## Maintainer map
+
+- Program.cs: protected settings transaction engine, diagnostics, entry and safety tests.
+- Telemetry.cs: profiles, CSV, focus history, statistics, capture lifecycle and tests.
+- SessionWindow.cs: UI, benchmark controls, comparison, advanced editor and UI tests.
+- HdRules.cs / hd-settings.tsv: generated by tools/update-hd-catalog.mjs from pinned official source. Review generated changes and run tests when updating the pin.
+- tools/prepare.ps1: fixed binary download/hash gate, no runtime download. Notices must accompany packaging.

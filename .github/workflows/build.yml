@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare pinned capture tool
+        shell: powershell
+        run: ./tools/prepare.ps1
       - name: Build and self-test
         shell: powershell
         run: ./test.ps1
