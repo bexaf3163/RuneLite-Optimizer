@@ -2,6 +2,8 @@
 
 This is an independent project. Do not change OSRS Path or its launch flow.
 
+The user's launch fix authorizes a process-local optimizer adapter around the unchanged installed launcher: add our JAR and select our entry point, which registers the original bridge and optimizer together in RuneLite's normal builtin startup. Never edit OSRS Path files/classes, transform bytecode, or persist injected environment variables. Open the original dashboard normally after the bridge is ready to avoid racing its game autostart.
+
 - Keep the application portable and usable without administrator access.
 - Never change real game settings during tests. Use fixtures.
 - Read only required diagnostic fields; never export credentials, raw user configuration, process command lines, account IDs, or game logs.

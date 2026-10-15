@@ -1,4 +1,6 @@
 $ErrorActionPreference = 'Stop'
+& node (Join-Path $PSScriptRoot 'tools\test-launcher.cjs')
+if($LASTEXITCODE -ne 0){throw 'Launch adapter tests failed'}
 & (Join-Path $PSScriptRoot 'build.ps1')
 $testFolder = Join-Path $PSScriptRoot 'test-results'
 New-Item -ItemType Directory -Path $testFolder -Force | Out-Null

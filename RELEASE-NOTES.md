@@ -1,11 +1,11 @@
-# RuneLite Optimizer 0.5.1 — fix RuneLite startup
+# RuneLite Optimizer 0.5.2 — open OSRS Path and load both plugins normally
 
-- Fixed the root cause of Java exiting before RuneLite opened: .NET Framework ZIP creation wrote backslash entry names into the companion JAR. Java could not find META-INF/MANIFEST.MF. Every JAR entry now uses forward slashes.
-- Added a real JVM startup test with the packaged -javaagent JAR and tests loaded from that JAR, rather than only testing loose compiled classes.
-- Launch now waits for a fresh, authenticated telemetry connection before saying RuneLite is connected. A spawned process alone is not success. Early JVM startup failure, timeout and an existing client without the optimizer module have separate messages.
-- Already-connected clients are reused. Launch errors remain visible instead of being overwritten by generic polling status.
-- Graphics presets and offline tuning are unchanged. OSRS Path code, package and plugin are untouched.
+- Launch now opens the selected OSRS Path dashboard normally after RuneLite telemetry is ready. Reusing a connected client also opens/focuses OSRS Path through its normal single-instance startup.
+- Removed the late Java-agent/EDT plugin attachment. Our independent entry point registers the original OSRS Path bridge and optimizer telemetry together via RuneLite's standard builtin plugin loading, then starts RuneLite normally.
+- The installed OSRS Path launcher file is read unchanged. An optimizer-owned, process-local adapter preserves its JVM flags, bridge/dependency classpath and game arguments, adding only our JAR, nonce and entry point. OSRS Path source/binaries/plugin are never edited or replaced. No global environment settings are changed.
+- Portable launcher resources remain alive while the optimizer module is running, rather than allowing the portable wrapper to clean up during client startup.
+- Fresh authenticated telemetry is still required before reporting success. An existing RuneLite without our module must be closed before relaunch.
 
-Download the single RuneLite-Optimizer.exe. Close any previous RuneLite client, update the optimizer and use Launch game again. The button invokes OSRS Path's existing RuneLite launcher directly; it does not open the OSRS Path dashboard itself.
+Close the previous RuneLite client, install this single EXE, and use Launch game. Leave time for initial loading; Play/login and all gameplay remain manual.
 
-Validation: packaged-agent JVM startup, companion authorization, all existing isolated safety/preset/telemetry tests, startup-failure fixtures, UI renders and portable/updater checks. Full live-game telemetry remains unverified; no gameplay or graphics changes were made during tests.
+Validation: packaged entry-point registration with both an isolated bridge fixture and the actual available OSRS Path bridge JAR; Node adapter preserves original flags/classpath/arguments and rejects unsupported invocation; all existing safety/preset/telemetry, single-EXE and updater tests passed. Tests did not log in, change game settings or modify OSRS Path files. Full live-game telemetry and dashboard launch in the user's desktop session are still to be verified.

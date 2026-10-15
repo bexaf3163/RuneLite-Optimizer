@@ -47,10 +47,11 @@ namespace RuneLiteOptimizer
         public static async Task<string> Launch(string application,bool inspect=false)
         {
             if(!File.Exists(application) || !application.EndsWith(".exe",StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Выберите установленный OSRS Path EXE.");
-            if(!inspect)try{var existing=await Read();if(existing.Fresh)return "RuneLite уже открыт, модуль оптимизатора подключён.";}catch(Exception){}
+            if(!inspect){bool connected=false;try{var existing=await Read();connected=existing.Fresh;}catch(Exception){}if(connected){OpenPathWindow(application);return "OSRS Path открыт; RuneLite и модуль оптимизатора подключены.";}}
             string stage=Path.Combine(Folder,"launch-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
             string jar=Path.Combine(stage,"OptimizerTelemetry.jar"),script=Path.Combine(stage,"launcher.cjs"),result=Path.Combine(stage,"result.json"),request=Path.Combine(stage,"request.json");
             File.WriteAllBytes(jar,Portable.Resource("OptimizerTelemetry.jar"));File.WriteAllBytes(script,Portable.Resource("launcher.cjs"));
+            File.WriteAllBytes(Path.Combine(stage,"launch-adapter.cjs"),Portable.Resource("launch-adapter.cjs"));
             File.WriteAllText(request,new JavaScriptSerializer().Serialize(new{jar=jar,result=result,token=Token(),log=Path.Combine(stage,"private-launch.log"),inspect=inspect,deadline=(long)(DateTime.UtcNow-new DateTime(1970,1,1)).TotalMilliseconds+40000}));
             var info=new ProcessStartInfo(application,"\""+script+"\""){UseShellExecute=false,CreateNoWindow=true,WorkingDirectory=Path.GetDirectoryName(application)};info.EnvironmentVariables["ELECTRON_RUN_AS_NODE"]="1";info.EnvironmentVariables["RLO_LAUNCH_REQUEST"]=request;
             using(var process=Process.Start(info))
@@ -66,11 +67,21 @@ namespace RuneLiteOptimizer
             var handshake=Stopwatch.StartNew();
             while(handshake.Elapsed.TotalSeconds<(state=="running"?4:75))
             {
-                try{var probe=await Read();if(probe.Fresh)return "RuneLite и модуль оптимизатора подключены. Нажмите Play, если ещё не вошли в игру.";}catch(Exception){}
+                bool connected=false;try{var probe=await Read();connected=probe.Fresh;}catch(Exception){}
+                if(connected){OpenPathWindow(application);return "OSRS Path открыт; RuneLite и модуль оптимизатора подключены. Нажмите Play, если ещё не вошли в игру.";}
                 if(StartupFailed(Path.Combine(stage,"private-launch.log")))throw new InvalidOperationException("Java завершилась при загрузке модуля оптимизатора. Игра не запущена. Обновите оптимизатор и повторите запуск.");
                 await Task.Delay(700);
             }
             throw new InvalidOperationException(state=="running"?"RuneLite уже открыт без совместимого модуля оптимизатора. Закройте RuneLite и нажмите «Запустить игру» снова.":"Подключение к RuneLite не подтверждено. Если клиент открыт, дождитесь его загрузки. При повторной попытке сначала закройте клиент. Настройки графики не подтверждены и замеры не начаты.");
+        }
+        public static ProcessStartInfo PathWindowStart(string application)
+        {
+            var info=new ProcessStartInfo(application){UseShellExecute=false,CreateNoWindow=false,WindowStyle=ProcessWindowStyle.Normal,WorkingDirectory=Path.GetDirectoryName(application)};
+            info.EnvironmentVariables.Remove("ELECTRON_RUN_AS_NODE");info.EnvironmentVariables.Remove("RLO_LAUNCH_REQUEST");return info;
+        }
+        static void OpenPathWindow(string application)
+        {
+            using(var process=Process.Start(PathWindowStart(application))){if(process==null)throw new InvalidOperationException("RuneLite подключён, но окно OSRS Path не удалось открыть. Откройте его обычным способом.");}
         }
         public static bool StartupFailed(string log)
         {

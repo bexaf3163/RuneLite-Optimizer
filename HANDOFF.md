@@ -1,3 +1,13 @@
+# 0.5.2 launch handoff — supersedes the agent approach below
+
+The user requires both OSRS Path dashboard and RuneLite to open. GuideApi now opens the selected EXE normally after fresh telemetry; it strips only optimizer helper Node-mode variables from that launch. A connected client's reuse also opens the dashboard. This avoids racing the dashboard's game autostart before the bridge is ready.
+
+The late OptimizerAgent is removed. OptimizerLauncher is the new own main: resolve the original com.osrspath.bridge.OsrsPathBridgePlugin class from its original JAR, register it and OptimizerTelemetryPlugin in one ExternalPluginManager.loadBuiltin call, then RuneLite.main. Never call the original main afterwards, since it would overwrite the builtin list. No original class/file or bytecode is changed.
+
+launch-adapter.cjs wraps child_process.spawn in the short-lived helper process BEFORE requiring the unchanged installed launcher. It recognizes only its exact original Java/main invocation, preserves all original flags/arguments and bridge/dependency jars, adds our JAR to -cp and our private token property, then chooses our own main. Unrelated spawns are untouched; unexpected launcher contracts fail visibly. Helper lifetime now follows local telemetry so portable cleanup does not happen prematurely. No JAVA_TOOL_OPTIONS injection or persistent environment edits remain.
+
+Tests cover pure spawn adaptation and packaged registration. The bridge test fixture is moved out before JAR packaging and never ships. A separate local registration check with the actual available OSRS Path bridge JAR passed without starting the game. UI/graphics/settings tests remain isolated. Full actual desktop/game startup has not been verified in this environment. Do not claim it has.
+
 # 0.5.1 startup fix — 2026-10-15
 
 Root cause verified from private startup error classification and JAR directory entries: Framework ZipFile.CreateFromDirectory used backslashes, so Java rejected the manifest and exited before the game. Never use that API to create a JAR without normalizing entry names to '/'. build-companion.ps1 now creates entries explicitly, moves the test runner out of the package, and runs that runner with the packaged agent JAR as the actual classpath source. This catches the original Windows-specific packaging failure.

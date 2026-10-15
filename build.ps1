@@ -9,6 +9,7 @@ $resources = @('hd-settings.tsv','README.md','LICENSE','THIRD-PARTY-NOTICES.md',
 $resources += '/resource:' + (Join-Path $PSScriptRoot 'tools\PresentMon.exe') + ',bundle.PresentMon.exe'
 $resources += '/resource:' + (Join-Path $PSScriptRoot 'tools\java-build\OptimizerTelemetry.jar') + ',bundle.OptimizerTelemetry.jar'
 $resources += '/resource:' + (Join-Path $PSScriptRoot 'companion\launcher.cjs') + ',bundle.launcher.cjs'
+$resources += '/resource:' + (Join-Path $PSScriptRoot 'companion\launch-adapter.cjs') + ',bundle.launch-adapter.cjs'
 $sources = Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src') -Filter '*.cs' | Select-Object -ExpandProperty FullName
 & $compilerPath /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 "/win32manifest:$PSScriptRoot\app.manifest" "/out:$buildFolder\RuneLite-Optimizer.exe" /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Management.dll /reference:System.Security.dll /reference:System.Xml.dll /reference:System.Web.Extensions.dll @resources @sources
 if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }

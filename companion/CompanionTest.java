@@ -13,6 +13,8 @@ public final class CompanionTest {
     }
     static void check(boolean ok,String label){if(!ok)throw new AssertionError(label);}
     public static void main(String[] args)throws Exception {
+        OptimizerLauncher.install();Class<?>[] registered=OptimizerLauncher.plugins(Class.forName("com.osrspath.bridge.OsrsPathBridgePlugin"));
+        check(registered.length==2&&registered[0].getName().equals("com.osrspath.bridge.OsrsPathBridgePlugin")&&registered[1]==OptimizerTelemetryPlugin.class,"Original bridge and optimizer registered together");
         check(OptimizerTelemetryPlugin.valid("hd.fpsTarget","999"),"FPS profile");check(OptimizerTelemetryPlugin.valid("hd.shadowMode",null),"Unset for exact restoration");
         check(!OptimizerTelemetryPlugin.valid("runelite.gpuplugin","true"),"No plugin activation");check(!OptimizerTelemetryPlugin.valid("hd.fpsTarget","1000"),"FPS bound");check(!OptimizerTelemetryPlugin.valid("gpu.detailDistance","25"),"Renderer-specific keys");check(!OptimizerTelemetryPlugin.valid("hd.shadowMode","FAKE"),"Enum");
         System.setProperty("sun.net.http.allowRestrictedHeaders","true");String token="a".repeat(64);System.setProperty("runelite.optimizer.token",token);System.setProperty("runelite.optimizer.port","0");

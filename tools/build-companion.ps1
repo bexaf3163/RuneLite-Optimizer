@@ -27,18 +27,22 @@ if(!(Test-Path $javaRuntime)){ $javaRuntime=Join-Path $env:USERPROFILE 'AppData\
 $classes=Join-Path $cache ('classes-'+[guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory $classes | Out-Null
 $sources=Get-ChildItem (Join-Path $PSScriptRoot '..\companion') -Filter '*.java' | Select-Object -ExpandProperty FullName
+$sources+=Join-Path $PSScriptRoot 'fixtures\OsrsPathBridgePlugin.java'
 $classPath=((Get-ChildItem $lib -Filter '*.jar').FullName -join ';' )
 & $javaRuntime -jar $ecj -11 -proc:none -encoding UTF-8 -cp $classPath -d $classes @sources
 if($LASTEXITCODE -ne 0){throw 'Companion compilation failed'}
-& $javaRuntime -cp ($classes+';'+$classPath) com.runeliteoptimizer.CompanionTest
+& $javaRuntime -ea -cp ($classes+';'+$classPath) com.runeliteoptimizer.CompanionTest
 if($LASTEXITCODE -ne 0){throw 'Companion safety tests failed'}
 $testClasses=Join-Path $cache ('tests-'+[guid]::NewGuid().ToString('N'))
 $testPackage=Join-Path $testClasses 'com\runeliteoptimizer'
 New-Item -ItemType Directory -Force $testPackage | Out-Null
 Move-Item -LiteralPath (Join-Path $classes 'com\runeliteoptimizer\CompanionTest.class') -Destination $testPackage
+$bridgeTestPackage=Join-Path $testClasses 'com\osrspath\bridge'
+New-Item -ItemType Directory -Force $bridgeTestPackage | Out-Null
+Move-Item -LiteralPath (Join-Path $classes 'com\osrspath\bridge\OsrsPathBridgePlugin.class') -Destination $bridgeTestPackage
 $meta=Join-Path $classes 'META-INF'
 New-Item -ItemType Directory $meta | Out-Null
-[IO.File]::WriteAllText((Join-Path $meta 'MANIFEST.MF'),"Manifest-Version: 1.0`r`nPremain-Class: com.runeliteoptimizer.OptimizerAgent`r`n`r`n",[Text.Encoding]::ASCII)
+[IO.File]::WriteAllText((Join-Path $meta 'MANIFEST.MF'),"Manifest-Version: 1.0`r`nMain-Class: com.runeliteoptimizer.OptimizerLauncher`r`n`r`n",[Text.Encoding]::ASCII)
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.IO.Compression
 $jar=Join-Path $cache 'OptimizerTelemetry.jar'
@@ -52,6 +56,8 @@ try {
   [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,$item.FullName,$entry) | Out-Null
  }
 } finally {$archive.Dispose()}
-& $javaRuntime ('-javaagent:'+$jar) -cp ($testClasses+';'+$jar+';'+$classPath) com.runeliteoptimizer.CompanionTest --agent-smoke
-if($LASTEXITCODE -ne 0){throw 'Packaged Java agent startup failed'}
+& $javaRuntime -ea -cp ($testClasses+';'+$jar+';'+$classPath) com.runeliteoptimizer.OptimizerLauncher --optimizer-registration-test
+if($LASTEXITCODE -ne 0){throw 'Packaged optimizer bootstrap registration failed'}
+& $javaRuntime -ea -cp ($testClasses+';'+$jar+';'+$classPath) com.runeliteoptimizer.CompanionTest --agent-smoke
+if($LASTEXITCODE -ne 0){throw 'Packaged companion tests failed'}
 Write-Output 'Independent telemetry companion compiled; no OSRS Path files changed.'
