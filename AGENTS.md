@@ -1,0 +1,13 @@
+# RuneLite Optimizer maintenance
+
+This is an independent project. Do not change OSRS Path or its launch flow.
+
+- Keep the application portable and usable without administrator access.
+- Never change real game settings during tests. Use fixtures.
+- Read only required diagnostic fields; never export credentials, raw user configuration, process command lines, account IDs, or game logs.
+- GPU changes must be explicitly previewed and confirmed, use an allowlist, require the client closed, and preserve unrelated bytes.
+- Backups may contain sensitive configuration: encrypt them with Windows CurrentUser DPAPI, keep them out of source control, and fail closed on restore conflicts.
+- Unknown hardware/telemetry must remain unknown. Do not invent FPS, temperatures or measured performance improvements.
+- Standard GPU and 117 HD settings are different. Do not disable plugins or change OSRS Path settings.
+- Run `test.ps1` after changes. Inspect UI renders at both sizes when layout changes.
+- Keep README limitations and handoff evidence accurate.

@@ -1,0 +1,48 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and self-test
+        shell: powershell
+        run: ./test.ps1
+      - name: Package
+        shell: powershell
+        run: |
+          Compress-Archive -Path dist/* -DestinationPath RuneLite-Optimizer-portable.zip
+          Get-FileHash RuneLite-Optimizer-portable.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  RuneLite-Optimizer-portable.zip" } | Set-Content SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RuneLite-Optimizer-portable
+          path: |
+            RuneLite-Optimizer-portable.zip
+            SHA256SUMS.txt
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: RuneLite-Optimizer-portable
+      - name: Publish portable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(tr -d '\r\n' < VERSION)"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; keeping the published artifact unchanged."
+            exit 0
+          fi
+          gh release create "$TAG" RuneLite-Optimizer-portable.zip SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --generate-notes --title "RuneLite Optimizer $TAG"
