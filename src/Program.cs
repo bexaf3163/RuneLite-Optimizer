@@ -288,7 +288,7 @@ namespace RuneLiteOptimizer
             System.Threading.Thread.Sleep(1000);
             var after = Clients();
             double elapsed = stopwatch.Elapsed.TotalMilliseconds;
-            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.2.0", "",
+            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.3.0", "",
                 "Windows: " + Environment.OSVersion.VersionString, "CPU: " + cpu.Trim(), "Логических процессоров: " + Environment.ProcessorCount,
                 "Оперативная память: " + ram, "Видеоадаптер: " + gpu,
                 "Драйвер GPU: " + Query("SELECT DriverVersion FROM Win32_VideoController", "DriverVersion"), "",
@@ -320,9 +320,14 @@ namespace RuneLiteOptimizer
         [STAThread]
         public static int Main(string[] args)
         {
+            if (args.Length>0 && args[0]=="--apply-update") return Updates.Apply(args);
+            if (args.Length>0 && args[0]=="--apply-update-test") return Updates.Apply(args,true);
+            if (args.Contains("--update-wait-fixture")){System.Threading.Thread.Sleep(1000);return 0;}
+            if (args.Contains("--update-integration-test")){try{Updates.IntegrationTest();return 0;}catch(Exception ex){File.WriteAllText("update-integration-failure.txt",ex.ToString());return 1;}}
+            if (args.Contains("--update-download-test")){var check=new Updates();check.Check("0.0.0").GetAwaiter().GetResult();File.WriteAllText("update-download-result.txt",check.Status);return check.Ready?0:1;}
             if (args.Contains("--self-test"))
             {
-                try { SelfTest.Run(); TelemetryTests.Run(); return 0; } catch (Exception e) { File.WriteAllText("self-test-failure.txt", e.ToString()); return 1; }
+                try { SelfTest.Run(); TelemetryTests.Run(); Updates.Tests(); return 0; } catch (Exception e) { File.WriteAllText("self-test-failure.txt", e.ToString()); return 1; }
             }
             if (args.Contains("--diagnose"))
             {

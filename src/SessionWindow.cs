@@ -14,8 +14,8 @@ namespace RuneLiteOptimizer
 {
     public sealed class Surface : Panel
     {
-        public Surface(){DoubleBuffered=true;BackColor=Color.FromArgb(23,28,37);Padding=new Padding(22);}
-        protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);using(var pen=new Pen(Color.FromArgb(38,45,57)))e.Graphics.DrawRectangle(pen,0,0,Width-1,Height-1);}
+        public Surface(){DoubleBuffered=true;BackColor=Color.FromArgb(20,24,31);Padding=new Padding(22);ResizeRedraw=true;}
+        protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;e.Graphics.Clear(Parent==null?Color.FromArgb(11,14,19):Parent.BackColor);using(var path=Geometry.Round(new RectangleF(0,0,Width-1,Height-1),14))using(var brush=new SolidBrush(BackColor))e.Graphics.FillPath(brush,path);}
     }
     public sealed class FrameChart : Control
     {
@@ -38,7 +38,7 @@ namespace RuneLiteOptimizer
     {
         [DllImport("user32.dll")] static extern bool ReleaseCapture();
         [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window,int message,IntPtr w,IntPtr l);
-        static readonly Color Background=Color.FromArgb(13,17,24),Muted=Color.FromArgb(150,160,178),Accent=Color.FromArgb(158,171,255);
+        static readonly Color Background=Color.FromArgb(11,14,19),Muted=Color.FromArgb(149,158,174),Accent=Color.FromArgb(146,172,255);
         readonly Capture capture=new Capture();readonly bool smoke; readonly Timer timer=new Timer {Interval=1000};
         readonly Panel body=new Panel {Dock=DockStyle.Fill,AutoScroll=true,Padding=new Padding(28,20,28,20)};
         readonly Label connection=new Label();readonly List<Button> nav=new List<Button>();
@@ -47,23 +47,26 @@ namespace RuneLiteOptimizer
         bool hasClient;string configPath;byte[] reviewed;ComboBox renderer,mode;TextBox preview,catalogSearch;DataGridView catalog;
         string sceneName="Grand Exchange"; bool autoEnabled=true,activeOnly=true,testUncapped=true;
         readonly Dictionary<string,string> pendingHd=new Dictionary<string,string>();
+        readonly Updates updates=new Updates();Button updateButton,captureButton;Label updateStatus;
         public SessionWindow(bool smoke)
         {
-            this.smoke=smoke;Text="RuneLite Optimizer · 0.2.0";FormBorderStyle=FormBorderStyle.None;BackColor=Background;ForeColor=Color.FromArgb(232,235,243);Font=new Font("Segoe UI",14,FontStyle.Regular,GraphicsUnit.Pixel);MinimumSize=new Size(800,660);Size=new Size(1120,840);StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;
-            var sidebar=new Panel {Dock=DockStyle.Left,Width=178,BackColor=Color.FromArgb(17,22,30),Padding=new Padding(16,24,16,20)};
-            sidebar.Controls.Add(TextLabel("RUNE LITE\nOptimizer",15,Accent,DockStyle.Top,75));
-            var links=new FlowLayoutPanel {Dock=DockStyle.Top,Height=180,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(0,10,0,0)};
-            string[] names={"Сеанс","Настройки","Система"};for(int i=0;i<names.Length;i++){int index=i;var b=Button(names[i],()=>ShowPage(index));b.Width=143;b.Height=42;links.Controls.Add(b);nav.Add(b);}sidebar.Controls.Add(links);links.BringToFront();
+            this.smoke=smoke;Text="RuneLite Optimizer · 0.3.0";FormBorderStyle=FormBorderStyle.None;BackColor=Background;ForeColor=Color.FromArgb(232,235,243);Font=new Font("Segoe UI",14,FontStyle.Regular,GraphicsUnit.Pixel);MinimumSize=new Size(800,660);Size=new Size(1120,840);StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.None;
+            var sidebar=new Panel {Dock=DockStyle.Left,Width=162,BackColor=Color.FromArgb(16,20,27),Padding=new Padding(16,24,16,20)};
+            sidebar.Controls.Add(TextLabel("RuneLite\nOptimizer",17,ForeColor,DockStyle.Top,86));
+            var links=new FlowLayoutPanel {Dock=DockStyle.Top,Height=225,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(0,10,0,0)};
+            string[] names={"Обзор","Графика","Система","Обновления"};for(int i=0;i<names.Length;i++){int index=i;var b=Button(names[i],()=>ShowPage(index));b.Width=128;b.Height=42;links.Controls.Add(b);nav.Add(b);}sidebar.Controls.Add(links);links.BringToFront();
             var foot=TextLabel("ЦЕЛЬ\n60 FPS\n16,67 мс / кадр",11,Muted,DockStyle.Bottom,90);sidebar.Controls.Add(foot);
-            var header=new Panel {Dock=DockStyle.Top,Height=68,Padding=new Padding(28,18,20,10)};var heading=TextLabel("Плавность игры",16,ForeColor,DockStyle.Left,35);heading.Width=300;header.Controls.Add(heading);connection.AutoSize=true;connection.Dock=DockStyle.Right;connection.ForeColor=Muted;header.Controls.Add(connection);
+            updateButton=Button("Версия "+Portable.Version,()=>{if(updates.Ready)InstallUpdate();else ShowPage(3);});updateButton.Dock=DockStyle.Bottom;updateButton.Height=40;sidebar.Controls.Add(updateButton);
+            var header=new Panel {Dock=DockStyle.Top,Height=48,Padding=new Padding(28,10,20,8)};var heading=TextLabel("ПРОИЗВОДИТЕЛЬНОСТЬ",10,Muted,DockStyle.Left,28);heading.Width=300;header.Controls.Add(heading);connection.AutoSize=true;connection.Dock=DockStyle.Right;connection.ForeColor=Muted;header.Controls.Add(connection);
             Controls.Add(body);Controls.Add(header);Controls.Add(sidebar);
             var caption=new Panel {Dock=DockStyle.Top,Height=34,BackColor=Color.FromArgb(17,22,30)};
-            var captionTitle=TextLabel("   RuneLite Optimizer   /   0.2.0",10,Muted,DockStyle.Left,34);captionTitle.Width=500;caption.Controls.Add(captionTitle);
+            var captionTitle=TextLabel("   RuneLite Optimizer   /   0.3.0",10,Muted,DockStyle.Left,34);captionTitle.Width=500;caption.Controls.Add(captionTitle);
             captionTitle.MouseDown+=(s,e)=>{if(e.Button==MouseButtons.Left){ReleaseCapture();SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero);}};
-            captionTitle.DoubleClick+=(s,e)=>WindowState=WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized;
-            foreach(string symbol in new[]{"×","□","—"}){string action=symbol;var b=Button(symbol,()=>{if(action=="×")Close();else if(action=="—")WindowState=FormWindowState.Minimized;else WindowState=WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized;});b.Dock=DockStyle.Right;b.AutoSize=false;b.Width=42;b.Height=34;b.Padding=Padding.Empty;b.Margin=Padding.Empty;caption.Controls.Add(b);b.BringToFront();}
+            captionTitle.DoubleClick+=(s,e)=>ToggleMaximize();
+            foreach(string symbol in new[]{"×","□","—"}){string action=symbol;var b=Button(symbol,()=>{if(action=="×")Close();else if(action=="—")WindowState=FormWindowState.Minimized;else ToggleMaximize();});b.Dock=DockStyle.Right;b.AutoSize=false;b.Width=42;b.Height=34;b.Padding=Padding.Empty;b.Margin=Padding.Empty;caption.Controls.Add(b);b.BringToFront();}
             Controls.Add(caption);ShowPage(0);
-            timer.Tick+=(s,e)=>TickSession();if(!smoke)timer.Start();
+            timer.Tick+=(s,e)=>{TickSession();updateButton.Text=updates.Ready?"Установить "+updates.AvailableVersion:"Версия "+Portable.Version;if(updateStatus!=null && !updateStatus.IsDisposed)updateStatus.Text=updates.Status;};if(!smoke)timer.Start();
+            Shown+=async(s,e)=>{if(!smoke){if(Updates.Automatic())await updates.Check();else updates.Status="Автообновления отключены";}};
             FormClosed+=(s,e)=>{timer.Stop();capture.Dispose();};
         }
         protected override void WndProc(ref Message m)
@@ -74,9 +77,10 @@ namespace RuneLiteOptimizer
             bool l=p.X<6,r=p.X>=Width-6,t=p.Y<6,b=p.Y>=Height-6;
             if(t)m.Result=new IntPtr(l?13:r?14:12);else if(b)m.Result=new IntPtr(l?16:r?17:15);else if(l)m.Result=new IntPtr(10);else if(r)m.Result=new IntPtr(11);
         }
+        void ToggleMaximize(){MaximizedBounds=Screen.FromHandle(Handle).WorkingArea;WindowState=WindowState==FormWindowState.Maximized?FormWindowState.Normal:FormWindowState.Maximized;}
         static Label TextLabel(string text,float size,Color color,DockStyle dock,int height){return new Label {Text=text,Font=new Font("Segoe UI",size*1.2f,FontStyle.Regular,GraphicsUnit.Pixel),ForeColor=color,Dock=dock,Height=height,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft};}
-        Button Button(string text,Action action){var b=new Button {Text=text,AutoSize=true,Height=36,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(32,40,55),ForeColor=ForeColor,Padding=new Padding(10,5,10,5),Cursor=Cursors.Hand,Margin=new Padding(0,0,10,8)};b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>{try{action();}catch(Exception ex){MessageBox.Show(this,ex.Message,"RuneLite Optimizer",MessageBoxButtons.OK,MessageBoxIcon.Information);}};return b;}
-        ComboBox Combo(string[] values,int width){var c=new ComboBox {DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=22,DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(32,40,55),ForeColor=ForeColor,Width=width,Margin=new Padding(0,2,12,10)};c.DrawItem+=(s,e)=>{e.DrawBackground();using(var brush=new SolidBrush(Color.FromArgb(32,40,55)))e.Graphics.FillRectangle(brush,e.Bounds);string label=e.Index>=0?c.Items[e.Index].ToString():"Не выбран";TextRenderer.DrawText(e.Graphics,label,c.Font,e.Bounds,ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);};c.Items.AddRange(values);if(values.Length>0)c.SelectedIndex=0;return c;}
+        Button Button(string text,Action action){var b=new ModernButton {Text=text,AutoSize=true,Height=38,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(29,35,46),ForeColor=ForeColor,Padding=new Padding(12,6,12,6),Cursor=Cursors.Hand,Margin=new Padding(0,0,10,8)};b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>{try{action();}catch(Exception ex){MessageBox.Show(this,ex.Message,"RuneLite Optimizer",MessageBoxButtons.OK,MessageBoxIcon.Information);}};return b;}
+        ComboBox Combo(string[] values,int width){var c=new ModernComboBox {DrawMode=DrawMode.OwnerDrawFixed,ItemHeight=22,DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Color.FromArgb(29,35,46),ForeColor=ForeColor,Width=width,Margin=new Padding(0,2,12,10)};c.DrawItem+=(s,e)=>{e.DrawBackground();using(var brush=new SolidBrush(Color.FromArgb(29,35,46)))e.Graphics.FillRectangle(brush,e.Bounds);string label=e.Index>=0?c.Items[e.Index].ToString():"Не выбран";TextRenderer.DrawText(e.Graphics,label,c.Font,e.Bounds,ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);};c.Items.AddRange(values);if(values.Length>0)c.SelectedIndex=0;return c;}
         CheckBox Check(string text,bool value){return new CheckBox {Text=text,Checked=value,AutoSize=true,ForeColor=Muted,Margin=new Padding(0,6,15,10)};}
         FlowLayoutPanel Row(){return new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Padding=new Padding(0,3,0,0)};}
         void Add(Control c){body.Controls.Add(c);c.BringToFront();}
@@ -84,24 +88,25 @@ namespace RuneLiteOptimizer
         void ShowPage(int index)
         {
             if(page==0 && scene!=null && !scene.IsDisposed){sceneName=scene.Text;autoEnabled=auto.Checked;activeOnly=active.Checked;testUncapped=uncapped.Checked;}
-            page=index;body.Controls.Clear();for(int i=0;i<nav.Count;i++)nav[i].BackColor=i==index?Color.FromArgb(49,60,88):Color.FromArgb(24,30,40);
-            if(index==0)SessionPage();else if(index==1)SettingsPage();else SystemPage();
+            page=index;var previous=body.Controls.Cast<Control>().ToArray();body.Controls.Clear();foreach(var control in previous)control.Dispose();for(int i=0;i<nav.Count;i++)nav[i].BackColor=i==index?Color.FromArgb(49,60,88):Color.FromArgb(24,30,40);
+            if(index==0)SessionPage();else if(index==1)SettingsPage();else if(index==2)SystemPage();else UpdatesPage();
         }
         void SessionPage()
         {
-            Add(TextLabel("Сеанс",24,ForeColor,DockStyle.Top,42));
-            Add(Note("Показатели за последние 30 с. Сравнение и отчёт — по всему проходу.",32));
-            var row=Row();clients=Combo(new string[0],260);row.Controls.Add(clients);row.Controls.Add(Button("Обновить",RefreshClients));row.Controls.Add(Button("Начать",StartCapture));row.Controls.Add(Button("Стоп",()=>{auto.Checked=false;capture.Dispose();connection.Text="Измерение остановлено";}));Add(row);
-            row=Row();scene=Combo(new[]{"Grand Exchange","Varrock","Falador","Lumbridge","Другое место"},175);scene.SelectedItem=sceneName;scene.SelectedIndexChanged+=(s,e)=>ContextChanged();row.Controls.Add(scene);
-            uncapped=Check("Тест без лимита",testUncapped);uncapped.CheckedChanged+=(s,e)=>ContextChanged();row.Controls.Add(uncapped);row.Controls.Add(Button("Новый проход",NewPass));Add(row);
-            var advanced=Row();auto=Check("Автоподключение",autoEnabled);advanced.Controls.Add(auto);active=Check("Только активное окно",activeOnly);advanced.Controls.Add(active);chain=Combo(new string[0],190);advanced.Controls.Add(chain);advanced.Visible=false;Add(advanced);
-            var toggle=Button("Параметры сбора ▾",()=>advanced.Visible=!advanced.Visible);toggle.Dock=DockStyle.Top;toggle.Height=28;Add(toggle);
-            state=Note("Запустите игру привычным способом. Проведите 120 секунд в выбранном месте.",42);Add(state);
+            Add(TextLabel("Плавность под контролем",26,ForeColor,DockStyle.Top,46));
+            Add(Note("Последние 30 секунд · цель 60 FPS",30));
+            var row=Row();clients=Combo(new string[0],230);row.Controls.Add(clients);var refresh=Button("↻",RefreshClients);refresh.AutoSize=false;refresh.Width=40;row.Controls.Add(refresh);
+            scene=Combo(new[]{"Grand Exchange","Varrock","Falador","Lumbridge","Другое место"},165);scene.SelectedItem=sceneName;scene.SelectedIndexChanged+=(s,e)=>ContextChanged();row.Controls.Add(scene);
+            captureButton=Button("Начать замер",()=>{if(capture.Running){auto.Checked=false;capture.Dispose();connection.Text="Измерение остановлено";}else StartCapture();});captureButton.BackColor=Accent;captureButton.ForeColor=Background;row.Controls.Add(captureButton);Add(row);
+            var advanced=Row();uncapped=Check("Тест без лимита",testUncapped);uncapped.CheckedChanged+=(s,e)=>ContextChanged();advanced.Controls.Add(uncapped);auto=Check("Автоподключение",autoEnabled);advanced.Controls.Add(auto);active=Check("Только активное окно",activeOnly);advanced.Controls.Add(active);chain=Combo(new string[0],190);advanced.Controls.Add(chain);advanced.Controls.Add(Button("Новый проход",NewPass));advanced.Visible=false;Add(advanced);
+            var toggle=Button("Параметры замера  ▾",()=>advanced.Visible=!advanced.Visible);toggle.Dock=DockStyle.Top;toggle.Height=28;toggle.BackColor=Background;toggle.ForeColor=Muted;Add(toggle);
+            state=Note("Запустите RuneLite привычным способом. Для сравнения нужен проход от 120 секунд.",36);Add(state);
             var metrics=new TableLayoutPanel {Dock=DockStyle.Top,Height=100,ColumnCount=3,Margin=new Padding(0,10,0,10)};for(int i=0;i<3;i++)metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.333f));
             fps=Metric(metrics,0,"СРЕДНИЙ FPS");low=Metric(metrics,1,"1% LOW");stalls=Metric(metrics,2,"ЗАДЕРЖКИ >50 МС");Add(metrics);
-            var graph=new Surface {Dock=DockStyle.Top,Height=180,Padding=new Padding(12)};chart=new FrameChart {Height=150};graph.Controls.Add(chart);Add(graph);
-            var advice=new Surface {Dock=DockStyle.Top,Height=105,Padding=new Padding(16,10,16,10)};assessment=TextLabel("Пока нет измерений",13,ForeColor,DockStyle.Top,30);details=Note("Число FPS само по себе не показывает короткие зависания.",52);advice.Controls.Add(details);advice.Controls.Add(assessment);Add(advice);
-            row=Row();row.Controls.Add(Button("Запомнить базовый",SaveBaseline));row.Controls.Add(Button("Сравнить проходы",Compare));row.Controls.Add(Button("Экспорт отчёта",Export));Add(row);comparison=Note("Для сравнения используйте тот же мир, место, ракурс и размер окна.",50);Add(comparison);
+            var graph=new Surface {Dock=DockStyle.Top,Height=172,Padding=new Padding(12)};chart=new FrameChart {Height=145};graph.Controls.Add(chart);Add(graph);
+            Add(new Panel {Dock=DockStyle.Top,Height=12});
+            var advice=new Surface {Dock=DockStyle.Top,Height=90,Padding=new Padding(18,8,18,8)};assessment=TextLabel("Готов к первому замеру",13,ForeColor,DockStyle.Top,28);details=Note("График покажет не только FPS, но и короткие зависания.",46);advice.Controls.Add(details);advice.Controls.Add(assessment);Add(advice);
+            row=Row();row.Controls.Add(Button("Сохранить базовый",SaveBaseline));row.Controls.Add(Button("Сравнить",Compare));row.Controls.Add(Button("Сохранить отчёт",Export));Add(row);comparison=Note("Тот же мир, место и ракурс — для честного сравнения.",32);Add(comparison);
             var more=new Button {Text="Как провести честный тест / доступ к измерениям",Dock=DockStyle.Top,FlatStyle=FlatStyle.Flat,Height=36,ForeColor=Muted};more.FlatAppearance.BorderSize=0;more.Click+=(s,e)=>MessageBox.Show(this,"1. Настройки: выберите GPU или 117 HD и профиль теста 999 FPS. Применение возможно только при закрытой игре.\n2. Запустите игру через своё приложение. В RuneLite проверьте Unlock FPS, VSync Off и отсутствие другого лимита в FPS Control / драйвере.\n3. Grand Exchange, Varrock, Falador, Lumbridge: по 120 секунд с одинаковым миром, ракурсом и окном. Город отмечается вами, автоматически координаты не считываются.\n4. Повторите с целевым профилем 60 FPS. Смотрите p99, 1% low и задержки. Не сравнивайте разные сцены.\n5. Если ETW пишет Access denied: Windows требует Performance Log Users либо ручной запуск оптимизатора от администратора. Автоматического повышения прав нет.\n\nPresentMon измеряет интервалы представления кадров приложения. Это не задержка сети и не гарантия фактической частоты показа монитором.","Проверка плавности");Add(more);
             RefreshClients();
         }
@@ -120,6 +125,7 @@ namespace RuneLiteOptimizer
                 if(autoEnabled && !capture.Running){var games=Diagnostics.Clients();if(games.Count==1 && (capture.Error.Length==0 || games[0].Id!=capture.Pid))try{capture.Start(games[0].Id);checkpoint=0;started=DateTime.UtcNow;}catch(Exception e){autoEnabled=false;capture.Error=e.Message;}}
                 return;
             }
+            captureButton.Text=capture.Running?"Остановить":"Начать замер";
             if(!capture.Running && auto.Checked){RefreshClients();if(hasClient && (capture.Error.Length==0 || ((Client)clients.SelectedItem).Id!=capture.Pid))try{StartCapture();}catch(Exception e){auto.Checked=false;capture.Error=e.Message;}}
             string selected=chain.SelectedItem as string;string[] keys=capture.Session.Chains();if(!keys.SequenceEqual(chain.Items.Cast<string>())){chain.Items.Clear();chain.Items.AddRange(keys);if(keys.Length>0)chain.SelectedItem=keys.Contains(selected)?selected:keys[0];}
             var frames=capture.Session.Select(chain.SelectedItem as string,Math.Max(checkpoint,LatestTime()-30),active.Checked);var stats=Statistics.From(frames);
@@ -135,7 +141,7 @@ namespace RuneLiteOptimizer
         }
         void SaveBaseline(){var frames=Selected();var candidate=Statistics.From(frames);if(candidate.Seconds<120 || candidate.Count<120)throw new InvalidOperationException("Соберите минимум 120 секунд и 120 кадров в активном окне.");baseline=candidate;baselineContext=Context()+" | "+active.Checked;comparison.Text="Базовый проход сохранён. Измените настройки, вернитесь в то же место и начните новый проход.";}
         void Compare(){var current=Statistics.From(Selected());if(baseline==null)throw new InvalidOperationException("Сначала сохраните базовый проход.");if(current.Seconds<120 || current.Count<120)throw new InvalidOperationException("В новом проходе нужно не менее 120 секунд и 120 кадров.");if(baselineContext!=Context()+" | "+active.Checked)throw new InvalidOperationException("Различаются отмеченная сцена, режим лимита или фильтр фокуса. Сравните одинаковые условия.");comparison.Text=string.Format("Изменение p99: {0:+0.00;-0.00;0} мс · 1% low: {1:+0.0;-0.0;0} FPS.\nПроверьте вручную одинаковые мир, ракурс, размер окна и число игроков.",current.P99-baseline.P99,current.Low1-baseline.Low1);}
-        void Export(){using(var dialog=new SaveFileDialog {Filter="Text report|*.txt",FileName="runelite-session.txt"})if(dialog.ShowDialog(this)==DialogResult.OK){var stats=Statistics.From(Selected());File.WriteAllText(dialog.FileName,"RuneLite Optimizer 0.2.0\r\nSource: PresentMon 2.6.0 application present intervals, not display/network latency.\r\nScene/mode manually declared: "+Context()+"\r\nForeground filter: "+active.Checked+"\r\n"+stats.Summary()+"\r\nCapture truncated: "+capture.Session.Truncated+"\r\nNo frames >5s: "+(capture.LastFrame!=DateTime.MinValue&&(DateTime.UtcNow-capture.LastFrame).TotalSeconds>5)+"\r\nCapture diagnostics:\r\n"+capture.Error+"\r\nNo account IDs, process command lines, raw RuneLite settings or game logs included.",new UTF8Encoding(true));}}
+        void Export(){using(var dialog=new SaveFileDialog {Filter="Text report|*.txt",FileName="runelite-session.txt"})if(dialog.ShowDialog(this)==DialogResult.OK){var stats=Statistics.From(Selected());File.WriteAllText(dialog.FileName,"RuneLite Optimizer 0.3.0\r\nSource: PresentMon 2.6.0 application present intervals, not display/network latency.\r\nScene/mode manually declared: "+Context()+"\r\nForeground filter: "+active.Checked+"\r\n"+stats.Summary()+"\r\nCapture truncated: "+capture.Session.Truncated+"\r\nNo frames >5s: "+(capture.LastFrame!=DateTime.MinValue&&(DateTime.UtcNow-capture.LastFrame).TotalSeconds>5)+"\r\nCapture diagnostics:\r\n"+capture.Error+"\r\nNo account IDs, process command lines, raw RuneLite settings or game logs included.",new UTF8Encoding(true));}}
         void SettingsPage()
         {
             Add(TextLabel("Настройки графики",24,ForeColor,DockStyle.Top,52));Add(Note("Профили применяются при закрытой игре. Перед записью вы увидите все изменения.",48));
@@ -147,8 +153,8 @@ namespace RuneLiteOptimizer
             Add(Note("Настройки меняют качество картинки. Снятие лимита используется для теста; после теста верните 60. Проверьте также FPS Control и ограничение драйвера вручную.",57));
             Button applyAdvanced=null;
             var expand=Button("Все параметры 117 HD / поиск",()=>{catalog.Visible=!catalog.Visible;catalogSearch.Visible=catalog.Visible;applyAdvanced.Visible=catalog.Visible;});expand.Dock=DockStyle.Top;Add(expand);
-            catalogSearch=new TextBox {Dock=DockStyle.Top,Visible=false,BackColor=Color.FromArgb(32,40,55),ForeColor=ForeColor,BorderStyle=BorderStyle.FixedSingle};Add(catalogSearch);
-            catalog=new DataGridView {Dock=DockStyle.Top,Height=330,Visible=false,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,BackgroundColor=Background,BorderStyle=BorderStyle.None,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.AllCells,EnableHeadersVisualStyles=false};catalog.DefaultCellStyle.BackColor=Color.FromArgb(23,28,37);catalog.DefaultCellStyle.ForeColor=ForeColor;catalog.DefaultCellStyle.WrapMode=DataGridViewTriState.True;catalog.DefaultCellStyle.SelectionBackColor=Color.FromArgb(49,60,88);catalog.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(32,40,55);catalog.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;catalog.Columns.Add("name","Параметр");catalog.Columns.Add("value","В файле → план");catalog.Columns.Add("description","Назначение / ключ");catalog.Columns[2].FillWeight=230;Add(catalog);catalogSearch.TextChanged+=(s,e)=>LoadCatalog();catalog.CellDoubleClick+=(s,e)=>{if(e.RowIndex>=0)EditHd((string)catalog.Rows[e.RowIndex].Tag);};
+            catalogSearch=new TextBox {Dock=DockStyle.Top,Visible=false,BackColor=Color.FromArgb(29,35,46),ForeColor=ForeColor,BorderStyle=BorderStyle.FixedSingle};Add(catalogSearch);
+            catalog=new DataGridView {Dock=DockStyle.Top,Height=330,Visible=false,ReadOnly=true,AllowUserToAddRows=false,AllowUserToDeleteRows=false,RowHeadersVisible=false,BackgroundColor=Background,BorderStyle=BorderStyle.None,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,AutoSizeRowsMode=DataGridViewAutoSizeRowsMode.AllCells,EnableHeadersVisualStyles=false};catalog.DefaultCellStyle.BackColor=Color.FromArgb(23,28,37);catalog.DefaultCellStyle.ForeColor=ForeColor;catalog.DefaultCellStyle.WrapMode=DataGridViewTriState.True;catalog.DefaultCellStyle.SelectionBackColor=Color.FromArgb(49,60,88);catalog.ColumnHeadersDefaultCellStyle.BackColor=Color.FromArgb(29,35,46);catalog.ColumnHeadersDefaultCellStyle.ForeColor=ForeColor;catalog.Columns.Add("name","Параметр");catalog.Columns.Add("value","В файле → план");catalog.Columns.Add("description","Назначение / ключ");catalog.Columns[2].FillWeight=230;Add(catalog);catalogSearch.TextChanged+=(s,e)=>LoadCatalog();catalog.CellDoubleClick+=(s,e)=>{if(e.RowIndex>=0)EditHd((string)catalog.Rows[e.RowIndex].Tag);};
             applyAdvanced=Button("Применить выбранные HD-параметры…",ApplyHd);applyAdvanced.Dock=DockStyle.Top;applyAdvanced.Visible=false;Add(applyAdvanced);UpdatePreview();LoadCatalog();
         }
         Dictionary<string,string> Values(){return OptimizationProfiles.Make(renderer.SelectedIndex==0,mode.SelectedIndex==1);}
@@ -156,7 +162,7 @@ namespace RuneLiteOptimizer
         void UpdatePreview(){var b=new StringBuilder();var current=reviewed==null?new Dictionary<string,string>():Settings.Read(reviewed);b.AppendLine(reviewed==null?"Откройте активный файл профиля RuneLite для предпросмотра.":"Изменения выбранного рендерера:");foreach(var p in Values())b.AppendLine(p.Key+": "+(current.ContainsKey(p.Key)?current[p.Key]:"не задано")+" → "+p.Value);preview.Text=b.ToString();}
         void ApplyProfile(){if(reviewed==null)throw new InvalidOperationException("Сначала откройте активный .properties и проверьте предпросмотр.");if(MessageBox.Show(this,preview.Text+"\nПрименить? Игра должна быть закрыта.","Проверка изменений",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;Changes.Apply(configPath,reviewed,Values());reviewed=File.ReadAllBytes(configPath);UpdatePreview();MessageBox.Show(this,"Профиль сохранён. Запустите RuneLite привычным способом. Резервная копия зашифрована для вашей учётной записи Windows.");}
         void Restore(){using(var d=new OpenFileDialog {Filter="Encrypted backup metadata|*.xml",InitialDirectory=Changes.BackupFolder})if(d.ShowDialog(this)==DialogResult.OK && MessageBox.Show(this,"Восстановить исходный файл? При последующих изменениях откат будет запрещён.","Откат",MessageBoxButtons.YesNo)==DialogResult.Yes){Changes.Restore(d.FileName);reviewed=null;UpdatePreview();}}
-        void LoadCatalog(){if(catalog==null)return;catalog.Rows.Clear();string path=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"hd-settings.tsv");if(!File.Exists(path))return;string[] lines=File.ReadAllLines(path);string text=reviewed==null?"":Settings.Bytes.GetString(reviewed);foreach(string line in lines.Skip(1)){var c=line.Split('\t');if(c.Length<4 || line.IndexOf(catalogSearch.Text,StringComparison.OrdinalIgnoreCase)<0)continue;var matches=System.Text.RegularExpressions.Regex.Matches(text,@"(?m)^\s*"+System.Text.RegularExpressions.Regex.Escape(c[0])+@"\s*[=:]\s*([^\r\n]*)");string value=matches.Count==0?"не задано":matches[matches.Count-1].Groups[1].Value;int n=catalog.Rows.Add(c[1],value+(pendingHd.ContainsKey(c[0])?" → "+pendingHd[c[0]]:""),c[3]+"\n"+c[0]+"\nДвойной щелчок: изменить");catalog.Rows[n].Tag=c[0];}}
+        void LoadCatalog(){if(catalog==null)return;catalog.Rows.Clear();string[] lines=Portable.Text("hd-settings.tsv").Split('\n');string text=reviewed==null?"":Settings.Bytes.GetString(reviewed);foreach(string line in lines.Skip(1)){var c=line.Split('\t');if(c.Length<4 || line.IndexOf(catalogSearch.Text,StringComparison.OrdinalIgnoreCase)<0)continue;var matches=System.Text.RegularExpressions.Regex.Matches(text,@"(?m)^\s*"+System.Text.RegularExpressions.Regex.Escape(c[0])+@"\s*[=:]\s*([^\r\n]*)");string value=matches.Count==0?"не задано":matches[matches.Count-1].Groups[1].Value;int n=catalog.Rows.Add(c[1],value+(pendingHd.ContainsKey(c[0])?" → "+pendingHd[c[0]]:""),c[3]+"\n"+c[0]+"\nДвойной щелчок: изменить");catalog.Rows[n].Tag=c[0];}}
         void EditHd(string key)
         {
             if(reviewed==null){MessageBox.Show(this,"Сначала откройте активный .properties.");return;}
@@ -179,6 +185,29 @@ namespace RuneLiteOptimizer
             if(MessageBox.Show(this,plan+"\n\nРасширенные параметры зависят от версии 117 HD. Игра должна быть закрыта. Применить с резервной копией?","План ручных изменений",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
             Changes.Apply(configPath,reviewed,new Dictionary<string,string>(pendingHd));reviewed=File.ReadAllBytes(configPath);pendingHd.Clear();UpdatePreview();LoadCatalog();
         }
+        void UpdatesPage()
+        {
+            Add(TextLabel("Всегда актуально",26,ForeColor,DockStyle.Top,50));
+            Add(Note("RuneLite Optimizer  "+Portable.Version+"  ·  Portable",40));
+            var card=new Surface {Dock=DockStyle.Top,Height=155,Padding=new Padding(20)};
+            updateStatus=TextLabel(updates.Status,13,ForeColor,DockStyle.Top,66);card.Controls.Add(updateStatus);
+            var row=Row();row.Controls.Add(Button("Проверить сейчас",async()=>{await updates.Check();if(!IsDisposed && updateStatus!=null && !updateStatus.IsDisposed)updateStatus.Text=updates.Status;}));row.Controls.Add(Button("Установить и перезапустить",InstallUpdate));card.Controls.Add(row);row.BringToFront();Add(card);
+            var automatic=Check("Автоматически проверять и загружать обновления",smoke?true:Updates.Automatic());automatic.Dock=DockStyle.Top;automatic.Height=46;automatic.CheckedChanged+=async(s,e)=>{try{Updates.SavePreference(automatic.Checked);if(automatic.Checked)await updates.Check();else updates.Status=updates.Ready?updates.Status:"Автообновления отключены";}catch(Exception ex){updateStatus.Text=ex.Message;}};Add(automatic);
+            Add(Note("Новая версия загружается с GitHub и проверяется по SHA-256. Установка происходит после нажатия перезапуска. Измерение не прерывается автоматически.",72));
+            Add(Note("Один EXE содержит все компоненты. Измеритель кадров и кэш обновлений размещаются в служебной папке Windows. Игровые настройки сохраняются отдельно.",70));
+            row=Row();row.Controls.Add(Button("Лицензии",()=>ShowDocument("THIRD-PARTY-NOTICES.md")));row.Controls.Add(Button("Руководство",()=>ShowDocument("README.md")));row.Controls.Add(Button("План оптимизации",()=>ShowDocument("OPTIMIZATION.md")));Add(row);
+        }
+        void ShowDocument(string resource)
+        {
+            using(var dialog=new Form {Text="RuneLite Optimizer · "+resource,Size=new Size(760,600),StartPosition=FormStartPosition.CenterParent,BackColor=Background,ForeColor=ForeColor})
+            {dialog.Controls.Add(new TextBox {Multiline=true,ReadOnly=true,Dock=DockStyle.Fill,ScrollBars=ScrollBars.Vertical,BackColor=Background,ForeColor=ForeColor,Font=Font,Text=Portable.Text(resource).Replace("\n",Environment.NewLine),BorderStyle=BorderStyle.None});dialog.ShowDialog(this);}
+        }
+        void InstallUpdate()
+        {
+            if(!updates.Ready)throw new InvalidOperationException("Новая версия пока не загружена. Нажмите «Проверить сейчас».");
+            if(MessageBox.Show(this,"Установить версию "+updates.AvailableVersion+" и перезапустить оптимизатор? Текущий замер завершится. Сохраните отчёт, если он нужен. Игра продолжит работать.","Обновление готово",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+            updates.Install();timer.Stop();capture.Dispose();Close();
+        }
         void SystemPage()
         {
             Add(TextLabel("Система",24,ForeColor,DockStyle.Top,52));Add(Note("Аппаратные данные помогают выбрать первый профиль. Причину просадок подтверждают повторные замеры.",55));
@@ -193,7 +222,7 @@ namespace RuneLiteOptimizer
             auto.Checked=false;scene.SelectedItem="Varrock";ShowPage(1);ShowPage(0);
             if(auto.Checked || scene.Text!="Varrock")throw new Exception("Session preferences lost during navigation");
             double t=0;for(int i=0;i<7500;i++){double ms=i%1000==0?75:16.5;t+=ms/1000;capture.Session.Add(new Frame {Time=t,Milliseconds=ms,Chain="test",Active=true});}TickSession();checkpoint=0;SaveBaseline();NewPass();bool rejected=false;try{Compare();}catch(InvalidOperationException){rejected=true;}if(!rejected)throw new Exception("Empty candidate accepted");capture.Session.Clear();baseline=null;scene.SelectedItem="Grand Exchange";
-            foreach(var size in new[]{new Size(1120,840),new Size(800,660)})for(int i=0;i<3;i++)
+            foreach(var size in new[]{new Size(1120,840),new Size(800,660)})for(int i=0;i<4;i++)
             {
                 Size=size;ShowPage(i);PerformLayout();Application.DoEvents();Snapshot(Path.Combine(folder,"ui-"+size.Width+"-"+i+".png"));
                 if(i<2){body.AutoScrollPosition=new Point(0,10000);Application.DoEvents();Snapshot(Path.Combine(folder,"ui-"+size.Width+"-"+i+"-bottom.png"));}

@@ -11,3 +11,5 @@ This is an independent project. Do not change OSRS Path or its launch flow.
 - Standard GPU and 117 HD settings are different. Do not disable plugins or change OSRS Path settings.
 - Run `test.ps1` after changes. Inspect UI renders at both sizes when layout changes.
 - Keep README limitations and handoff evidence accurate.
+- Ship a single EXE with embedded capture tool, catalogue, manuals and licenses. Never require adjacent files for normal operation.
+- Updates must use this repository's stable GitHub release, exact asset identity, SHA-256 and version checks. Never restart an active session without user action. Keep the updater helper protocol compatible and test replacement/rollback on isolated copies.

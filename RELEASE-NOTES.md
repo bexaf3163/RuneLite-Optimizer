@@ -1,11 +1,12 @@
-# 0.2.0
+# RuneLite Optimizer 0.3.0
 
-- Rebuilt dark minimalist UI with collapsed capture details and advanced HD editor.
-- Added official SHA-256 pinned PresentMon 2.6.0 session capture, PID/swap-chain isolation and QPC-aligned foreground filtering.
-- Added present FPS, 1% low, p95/p99, long interval counters, live chart and complete-pass report/comparison.
-- Added manual populated-city benchmark labels and 120-second minimum comparison gates.
-- Added Standard GPU / 117 HD target-60 and high-cap-999 profiles.
-- Added search/edit/preview for all 100 visible settings in a pinned official HD configuration snapshot, with compiled enum/range validation.
-- Retained offline-only file writes, DPAPI backups and conflict-safe restoration.
+Download **RuneLite-Optimizer.exe** directly. No ZIP, installer or adjacent dependencies are needed; Windows 10/11 x64 and .NET Framework 4.8 are required.
 
-Important: ETW access was denied in the local test environment; live RuneLite capture, populated-city performance, actual HD installation and stable 60 FPS have not been verified. ETW may require Performance Log Users or explicitly running as administrator. HD itself is installed through RuneLite Plugin Hub; city/cap labels are manual. This release provides measurement/configuration tools, not a verified automatic performance gain.
+- Refined minimalist dark dashboard: rounded cards, single capture toggle, compact scene selection and collapsed advanced controls.
+- All runtime components, 100-setting HD catalogue, manuals and third-party licenses embedded in one EXE. PresentMon extracts to the user's runtime cache when required.
+- Automatic startup checks and background downloads from this repository's stable GitHub releases. Exact asset/source, size, SHA-256 digest and executable version checked.
+- User chooses when to restart/install. Separate helper replaces only the matching old EXE; immediate launch failure restores it. Game remains running.
+- Automatic checking can be disabled; manual check remains available. Offline failures do not block the app.
+- Verified on isolated fixtures: original safety/telemetry tests, single-EXE execution from an empty folder, four-page UI renders, helper replacement/restart and failed-launch rollback.
+
+Versions 0.1/0.2 need this EXE downloaded once manually; later updates are offered in the app. Files are not yet publisher-signed. ETW access still requires suitable Windows permissions; real RuneLite FPS improvement has not been established by these packaging tests.

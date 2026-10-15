@@ -94,7 +94,7 @@ namespace RuneLiteOptimizer
     public sealed class Capture : IDisposable
     {
         public const string Digest="b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af";
-        public static string Tool {get{return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools","PresentMon.exe");}}
+        public static string Tool {get{return Portable.CapturePath;}}
         public readonly FrameSession Session=new FrameSession();
         public string Status="Ожидание RuneLite", Error="";
         public int Pid; public DateTime LastFrame=DateTime.MinValue;
@@ -105,7 +105,7 @@ namespace RuneLiteOptimizer
         public bool Running {get {try{return process!=null && !process.HasExited;}catch{return false;}}}
         public void Start(int pid)
         {
-            Dispose(); if(!File.Exists(Tool))throw new InvalidOperationException("Нет tools/PresentMon.exe. Используйте полную portable-сборку.");
+            Dispose(); Portable.EnsureCapture();
             if(!string.Equals(Settings.Hash(File.ReadAllBytes(Tool)),Digest,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("PresentMon не прошёл проверку SHA-256.");
             Pid=pid;Error="";Session.Clear();LastFrame=DateTime.MinValue;var parser=new CsvFrames();sessionName="RLO_"+Guid.NewGuid().ToString("N");
             focus=new FocusHistory();var history=focus;history.Add((double)Stopwatch.GetTimestamp()/Stopwatch.Frequency,Foreground(pid));
