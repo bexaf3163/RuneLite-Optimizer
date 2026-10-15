@@ -20,11 +20,11 @@ namespace RuneLiteOptimizer
         public int? x,y,plane;
         public long timestamp,cameraTravel,walkTravel;
         public bool inGame;
-        public string generation,renderer;
+        public string generation,renderer,configPath;public string[] availableRenderers;
         public Dictionary<string,string> raw,effective;
         public bool Fresh {get{return Math.Abs((DateTime.UtcNow-new DateTime(1970,1,1)).TotalMilliseconds-timestamp)<4000;}}
     }
-    public sealed class GuidePreferences {public string osrsPath="";}
+    public sealed class GuidePreferences {public string osrsPath="",mode="gpu";}
     public static class GuideApi
     {
         public static string Folder {get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"RuneLiteOptimizer","Guided");}}
@@ -42,7 +42,7 @@ namespace RuneLiteOptimizer
             if(body!=null){request.Method="POST";request.ContentType="application/json";byte[] bytes=Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(body));request.ContentLength=bytes.Length;using(var output=request.GetRequestStream())output.Write(bytes,0,bytes.Length);}
             using(var response=request.GetResponse())using(var reader=new StreamReader(response.GetResponseStream())){string text=reader.ReadToEnd();if(text.Length>65536)throw new InvalidOperationException("Слишком большой ответ телеметрии.");return text;}
         }
-        public static Task<GameProbe> Read(){return Task.Run(()=>{var p=new JavaScriptSerializer().Deserialize<GameProbe>(Call("/telemetry",null));if(p.schema!=1 || p.pid<=0 || string.IsNullOrEmpty(p.generation) || p.raw==null || p.effective==null)throw new InvalidOperationException("Несовместимый модуль телеметрии.");return p;});}
+        public static Task<GameProbe> Read(){return Task.Run(()=>{var p=new JavaScriptSerializer().Deserialize<GameProbe>(Call("/telemetry",null));if(p.schema!=2 || p.pid<=0 || string.IsNullOrEmpty(p.generation) || p.raw==null || p.effective==null || p.availableRenderers==null || string.IsNullOrEmpty(p.configPath))throw new InvalidOperationException("Перезапустите RuneLite из новой версии оптимизатора: нужен обновлённый модуль телеметрии.");return p;});}
         public static Task Apply(GameProbe p,Dictionary<string,string> values){return Task.Run(()=>{if(!p.Fresh)throw new InvalidOperationException("Данные игры устарели.");foreach(var v in values)if(!p.raw.ContainsKey(v.Key) || !v.Key.StartsWith(p.renderer+".",StringComparison.Ordinal))throw new InvalidOperationException("Рендерер изменился.");Call("/configure",new{generation=p.generation,values=values,expected=p.raw});});}
         public static async Task<string> Launch(string application,bool inspect=false)
         {
@@ -74,35 +74,57 @@ namespace RuneLiteOptimizer
     }
     public sealed class GuideResult
     {
-        public string cycle,scene,phase;public int world,width,height,nearbyPlayers;public long cameraTravel,walkTravel;public Statistics metrics;public int conditionPauses;
+        public string cycle,scene,phase;public int world,width,height,nearbyPlayers;public long cameraTravel,walkTravel;public Statistics metrics;public int conditionPauses;public bool comparable;
     }
     public sealed class GuidedBenchmark
     {
-        public bool Running,NeedsApply;public int Cycle,Place,Phase;public string Instruction="Выберите OSRS Path и запустите игру с модулем измерений.",Status="Тест ещё не начат",ReportPath="",Error="";
+        public bool Running,NeedsApply,WaitingForClose,WaitingForRestart,RestoreRequested,Completed,Verified,QuickApply;public int SelectedTier;public TuneRecovery Recovery;
+        public int Cycle,Place,Phase;public string Instruction="Выберите OSRS Path и запустите игру с модулем измерений.",Status="Тест ещё не начат",ReportPath="",Error="";
         public readonly List<GuideResult> Results=new List<GuideResult>();
         public readonly List<Statistics> RawSegments=new List<Statistics>();
         public Dictionary<string,string> OriginalRaw,OriginalEffective,Desired;public string Generation,Renderer;
         public double PhaseSeconds,Warmup;public bool Arrived;
         int world,width,height,pauses;double cursor;long cameraStart,walkStart;bool phaseStarted;string stream;
         readonly List<Frame> frames=new List<Frame>();
-        public static readonly string[] Cycles={"Исходное качество · 999","Оптимизация · 999","Проверка цели · 60"};
+        public static readonly string[] Cycles=AutoQuality.Names;
         public static readonly string[] Phases={"Стойте спокойно, не двигайте камеру.","Плавно вращайте камеру, оставаясь на месте. Сделайте хотя бы пол-оборота.","Пройдите примерно 12 клеток и вернитесь обратно. Достаточно двух перемещений."};
         public Dictionary<string,string> Plan(int cycle)
         {
-            bool preserve=cycle==2&&Results.Where(r=>r.cycle==Cycles[0]).Any()&&Results.Where(r=>r.cycle==Cycles[0]).All(r=>r.metrics.Fps>=65&&r.metrics.P99<=16);
-            var values=cycle==0||preserve?new Dictionary<string,string>(OriginalRaw):OptimizationProfiles.Make(Renderer=="hd",cycle!=2).Where(k=>OriginalRaw.ContainsKey(k.Key)).ToDictionary(k=>k.Key,k=>k.Value);
-            values[Renderer+".unlockFps"]="true";values[Renderer+".vsyncMode"]="OFF";values[Renderer+".fpsTarget"]=cycle==2?"60":"999";return values;
+            if(QuickApply)return AutoQuality.Recommended(Renderer,OriginalRaw);
+            int tier=cycle==5?SelectedTier:cycle;
+            var values=tier==0?OriginalRaw.Where(p=>p.Key.StartsWith(Renderer+".",StringComparison.Ordinal)).ToDictionary(p=>p.Key,p=>p.Value):AutoQuality.Values(Renderer,tier,OriginalRaw);
+            if(Renderer=="none")values.Clear();
+            else {values[Renderer+".unlockFps"]="true";values[Renderer+".vsyncMode"]="OFF";values[Renderer+".fpsTarget"]=cycle==5?"72":"999";}
+            values["runelite.gpuplugin"]=Renderer=="gpu"?"true":"false";values["runelite.hdplugin"]=Renderer=="hd"?"true":"false";values["fpscontrol.limitFps"]="false";
+            return values;
         }
-        public void Begin(GameProbe p,string reportFolder)
+        public void RequireClose(){NeedsApply=true;WaitingForClose=true;WaitingForRestart=false;Status="Закройте игру · следующий профиль готов";Instruction="Выйдите из игры и закройте RuneLite. После полного закрытия программа изменит графику и снова запустит клиент.";}
+        public void Reconnected(GameProbe p)
         {
-            if(!p.Fresh||!p.inGame||!(p.renderer=="hd"||p.renderer=="gpu")||p.effective.Count<7)throw new InvalidOperationException("Нужны свежие данные вошедшего в игру клиента и активный GPU/117 HD.");
-            Generation=p.generation;Renderer=p.renderer;world=p.world;width=p.viewportWidth;height=p.viewportHeight;OriginalRaw=new Dictionary<string,string>(p.raw);OriginalEffective=new Dictionary<string,string>(p.effective);Results.Clear();RawSegments.Clear();Cycle=Place=Phase=0;Error="";Running=true;NeedsApply=true;ResetPhase();
+            if(!p.Fresh||(!p.inGame&&!QuickApply)||p.renderer!=Renderer||!string.Equals(p.configPath,Recovery.Path,StringComparison.OrdinalIgnoreCase)||!TuneFiles.Matches(p.raw,Recovery.Expected))throw new InvalidOperationException("Ожидание исходного профиля RuneLite и выбранного рендерера. Настройки не подтверждены.");
+            Generation=p.generation;WaitingForRestart=false;Applied();
+        }
+        IEnumerable<GuideResult> Round(int round){return Results.Where(r=>r.cycle==Cycles[round]);}
+        public void FinishRound()
+        {
+            if(Renderer=="none"){Completed=true;Verified=false;Running=false;Status="Стандартный режим измерен";Instruction="Без GPU/117 HD стандартный рендерер ограничен примерно 50 FPS. Для цели 60+ выберите GPU или 117 HD.";return;}
+            if(Cycle==5){Verified=AutoQuality.Pass(Round(5),true);Completed=true;Running=false;Status=Verified?"Готово · цель подтверждена на тесте":"Готово · стабильные 60+ не подтверждены";Instruction=Verified?"Оставлен самый красивый прошедший профиль из проверенной лестницы качества. Отчёт сохранён.":"Выбранный профиль не прошёл повторную проверку. Результат сохранён без обещания отсутствия просадок.";return;}
+            if(Cycle>0&&AutoQuality.Pass(Round(Cycle),false)){SelectedTier=Cycle;Cycle=5;}
+            else if(Cycle==4){SelectedTier=Enumerable.Range(0,5).OrderBy(t=>AutoQuality.Loss(Round(t))).First();Cycle=5;}
+            else Cycle++;
+            RequireClose();
+        }
+        public void Begin(GameProbe p,string reportFolder,string target=null,bool quick=false)
+        {
+            if(!p.Fresh||(!p.inGame&&!quick)||p.raw==null||p.effective==null||!(new[]{"none","hd","gpu"}.Contains(target??p.renderer))||p.availableRenderers==null||!p.availableRenderers.Contains(target??p.renderer))throw new InvalidOperationException("Войдите в игру для замеров. Для 117 HD плагин должен быть установлен через Plugin Hub.");
+            QuickApply=quick;
+            Recovery=TuneFiles.Begin(p);Generation=p.generation;Renderer=target??p.renderer;world=p.world;width=p.viewportWidth;height=p.viewportHeight;OriginalRaw=new Dictionary<string,string>(p.raw);OriginalEffective=new Dictionary<string,string>(p.effective);Results.Clear();RawSegments.Clear();Cycle=Place=Phase=0;Error="";Running=true;Completed=Verified=RestoreRequested=false;SelectedTier=0;NeedsApply=true;ResetPhase();RequireClose();
             Directory.CreateDirectory(reportFolder);ReportPath=Path.Combine(reportFolder,"benchmark-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N").Substring(0,6)+".json");
             File.WriteAllBytes(ReportPath+".backup",ProtectedData.Protect(Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new{generation=Generation,renderer=Renderer,raw=OriginalRaw})),null,DataProtectionScope.CurrentUser));
         }
         public void Applied(){Desired=Plan(Cycle);NeedsApply=false;Arrived=false;ResetPhase();}
         void ResetPhase(){frames.Clear();PhaseSeconds=Warmup=0;phaseStarted=false;stream=null;cursor=0;pauses=0;}
-        public void Pause(string reason){Instruction=reason;Status="Пауза · условия не выполнены";Warmup=0;pauses++;}
+        public void Pause(string reason){Instruction=reason;Status="Пауза · условия не выполнены";Warmup=0;cursor=double.NaN;pauses++;}
         bool SettingsMatch(GameProbe p)
         {
             foreach(var pair in Desired){string value;if(!p.effective.TryGetValue(pair.Key,out value))return false;string expected=pair.Value??(OriginalEffective.ContainsKey(pair.Key)?OriginalEffective[pair.Key]:null);if(expected!=value)return false;}return true;
@@ -125,28 +147,32 @@ namespace RuneLiteOptimizer
             if(Warmup<10){Warmup++;cursor=source.LastTime;Instruction="Вы на месте. Оставайтесь здесь: прогрев сцены "+Warmup.ToString("F0")+" / 10 с.";Status=Cycles[Cycle]+" · "+place.Name;return;}
             if(!phaseStarted){cameraStart=p.cameraTravel;walkStart=p.walkTravel;phaseStarted=true;cursor=source.LastTime;}
             if((Phase==0&&(p.cameraTravel-cameraStart>24||p.walkTravel-walkStart>2))||(Phase==1&&p.walkTravel-walkStart>2)){ResetPhase();Instruction="Для этого этапа остановитесь. Начинаю его заново.";return;}
+            if(double.IsNaN(cursor)){cursor=source.LastTime;return;}
             var next=source.Select(stream,cursor+.000001,true);cursor=source.LastTime;
             frames.AddRange(next);PhaseSeconds=frames.Sum(f=>f.Milliseconds)/1000;
             double goal=Phase==2?60:30;Instruction=Phases[Phase];Status=Cycles[Cycle]+" · "+place.Name+" · "+Math.Min(goal,PhaseSeconds).ToString("F0")+" / "+goal+" с";
             bool action=Phase==0||Phase==1&&p.cameraTravel-cameraStart>=1024||Phase==2&&p.walkTravel-walkStart>=24;
             if(PhaseSeconds>180&&!action){Archive(source);ResetPhase();Instruction="Действие не зафиксировано. Повторим этот этап: "+Phases[Phase];return;}
             if(PhaseSeconds<goal||!action)return;
-            Results.Add(new GuideResult{cycle=Cycles[Cycle],scene=place.Name,phase=Phases[Phase],world=world,width=width,height=height,nearbyPlayers=p.nearbyPlayers,cameraTravel=p.cameraTravel-cameraStart,walkTravel=p.walkTravel-walkStart,metrics=Statistics.From(frames),conditionPauses=pauses});
+            var reference=Results.FirstOrDefault(r=>r.cycle==Cycles[0]&&r.scene==place.Name&&r.phase==Phases[Phase]);
+            bool comparable=reference==null||Math.Abs(reference.nearbyPlayers-p.nearbyPlayers)<=Math.Max(10,reference.nearbyPlayers*.5);
+            Results.Add(new GuideResult{cycle=Cycles[Cycle],scene=place.Name,phase=Phases[Phase],world=world,width=width,height=height,nearbyPlayers=p.nearbyPlayers,cameraTravel=p.cameraTravel-cameraStart,walkTravel=p.walkTravel-walkStart,metrics=Statistics.From(frames),conditionPauses=pauses,comparable=comparable});
             Phase++;ResetPhase();if(Phase==3){Phase=0;Place++;Arrived=false;}
-            if(Place==4){Place=0;Cycle++;if(Cycle==3){Running=false;Instruction="Тест завершён. Профиль 60 FPS оставлен активным; отчёт сохранён.";Status="Готово · 36 этапов записаны";}else NeedsApply=true;}
+            if(Place==4){Place=0;FinishRound();if(Completed&&Recovery!=null){Recovery.Completed=true;TuneFiles.Save(Recovery);}}
             Archive(source);Save(source);
         }
         void Archive(FrameSession source){var raw=Statistics.From(source.All());if(raw.Count>0)RawSegments.Add(raw);source.Clear();}
         public void Save(FrameSession source)
         {
             if(string.IsNullOrEmpty(ReportPath))return;
-            var serializer=new JavaScriptSerializer();string json=serializer.Serialize(new{version=Portable.Version,completed=!Running&&Cycle==3,renderer=Renderer,results=Results,rawSegments=RawSegments,rawSession=Statistics.From(source.All()),warning="Present intervals, not network latency. Paused/invalid intervals remain in raw segments. Global percentiles cannot be obtained by averaging segment percentiles. World/viewport fixed; player count can differ between passes. No account identity recorded.",error=Error});
+            var serializer=new JavaScriptSerializer();string json=serializer.Serialize(new{version=Portable.Version,completed=Completed,unmeasuredPreset=QuickApply,verified60plus=Verified,selectedTier=SelectedTier,qualityLadder=Cycles,renderer=Renderer,results=Results,rawSegments=RawSegments,rawSession=Statistics.From(QuickApply?new Frame[0]:source.All()),warning="Present intervals, not network latency. Best among tested presets, not a global optimum or future no-stall guarantee. Paused/invalid intervals remain in raw segments. World/viewport fixed; player count can differ between passes. No account identity or private configuration path recorded.",error=Error.Length>0?"Operation failed; details remain in the local UI.":""});
             string temp=ReportPath+".tmp";File.WriteAllText(temp,json,new UTF8Encoding(false));if(File.Exists(ReportPath))File.Replace(temp,ReportPath,null);else File.Move(temp,ReportPath);
         }
         public static void Tests()
         {
             var place=BenchmarkPlace.All()[0];var p=new GameProbe{x=3222,y=3218,plane=0};if(!place.Contains(p,14))throw new Exception("Scene arrival");p.plane=1;if(place.Contains(p,14))throw new Exception("Scene floor isolation");
-            var engine=new GuidedBenchmark{Renderer="hd",OriginalRaw=new Dictionary<string,string>{{"hd.fpsTarget",null},{"hd.shadowMode","DETAILED"}}};if(engine.Plan(0)["hd.shadowMode"]!="DETAILED"||engine.Plan(0)["hd.fpsTarget"]!="999"||engine.Plan(2)["hd.fpsTarget"]!="60")throw new Exception("Guide profile plan");
+            var engine=new GuidedBenchmark{Renderer="hd",OriginalRaw=new Dictionary<string,string>{{"hd.fpsTarget",null},{"hd.shadowMode","DETAILED"}}};if(engine.Plan(0)["hd.shadowMode"]!="DETAILED"||engine.Plan(0)["hd.fpsTarget"]!="999"||engine.Plan(5)["hd.fpsTarget"]!="72")throw new Exception("Guide profile plan");
+            TuneFiles.Tests();
             File.WriteAllText("guide-test-result.txt","PASS: scene bounds/floor and non-destructive profile planning. Java companion tests exercise authorization and input allowlist.");
         }
     }

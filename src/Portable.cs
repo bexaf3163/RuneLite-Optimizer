@@ -11,7 +11,7 @@ namespace RuneLiteOptimizer
 {
     public static class Portable
     {
-        public const string Version="0.4.0";
+        public const string Version="0.5.0";
         public static byte[] Resource(string name)
         {
             using(var source=Assembly.GetExecutingAssembly().GetManifestResourceStream("bundle."+name))

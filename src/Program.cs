@@ -42,7 +42,7 @@ namespace RuneLiteOptimizer
 
     public static class Settings
     {
-        public static readonly string[] Keys = Preset.All()[0].Values.Keys.Concat(OptimizationProfiles.Keys).Concat(HdRules.Choices.Keys).Concat(HdRules.Ranges.Keys).Distinct().ToArray();
+        public static readonly string[] Keys = Preset.All()[0].Values.Keys.Concat(OptimizationProfiles.Keys).Concat(HdRules.Choices.Keys).Concat(HdRules.Ranges.Keys).Concat(new[]{"runelite.gpuplugin","runelite.hdplugin","fpscontrol.limitFps"}).Distinct().ToArray();
         // Latin-1 is a byte-preserving transport, not a reinterpretation of user text.
         public static readonly Encoding Bytes = Encoding.GetEncoding(28591);
         private static Regex Pattern(string key)
@@ -65,7 +65,7 @@ namespace RuneLiteOptimizer
         public static byte[] Patch(byte[] original, Dictionary<string, string> values)
         {
             foreach (var pair in values)
-                if (!Keys.Contains(pair.Key) || !(Preset.All().Any(p => p.Values.ContainsKey(pair.Key) && p.Values[pair.Key] == pair.Value) || OptimizationProfiles.Valid(pair.Key, pair.Value) || HdRules.Valid(pair.Key,pair.Value)))
+                if (!Keys.Contains(pair.Key) || !(pair.Value==null || AutoQuality.Valid(pair.Key,pair.Value) || Preset.All().Any(p => p.Values.ContainsKey(pair.Key) && p.Values[pair.Key] == pair.Value) || OptimizationProfiles.Valid(pair.Key, pair.Value) || HdRules.Valid(pair.Key,pair.Value)))
                     throw new InvalidOperationException("Недопустимый параметр профиля.");
             string text = Bytes.GetString(original);
             if (text.Replace("\r\n", "").Contains("\n") && text.Contains("\r\n"))
@@ -100,17 +100,17 @@ namespace RuneLiteOptimizer
             {
                 foreach (var pair in values)
                 {
-                    if (Pattern(pair.Key).IsMatch(lines[i]))
+                    if (lines[i]!=null && Pattern(pair.Key).IsMatch(lines[i]))
                     {
-                        lines[i] = pair.Key + "=" + pair.Value;
+                        lines[i] = pair.Value==null?null:pair.Key + "=" + pair.Value;
                         seen.Add(pair.Key);
                     }
                 }
             }
-            string updated = string.Join(newline, lines);
+            string updated = string.Join(newline, lines.Where(line=>line!=null));
             if (updated.Length > 0 && !updated.EndsWith("\n", StringComparison.Ordinal)) updated += newline;
             foreach (var pair in values)
-                if (!seen.Contains(pair.Key)) updated += pair.Key + "=" + pair.Value + newline;
+                if (pair.Value!=null && !seen.Contains(pair.Key)) updated += pair.Key + "=" + pair.Value + newline;
             return Bytes.GetBytes(updated);
         }
         public static string Hash(byte[] bytes)
@@ -288,7 +288,7 @@ namespace RuneLiteOptimizer
             System.Threading.Thread.Sleep(1000);
             var after = Clients();
             double elapsed = stopwatch.Elapsed.TotalMilliseconds;
-            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.4.0", "",
+            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.5.0", "",
                 "Windows: " + Environment.OSVersion.VersionString, "CPU: " + cpu.Trim(), "Логических процессоров: " + Environment.ProcessorCount,
                 "Оперативная память: " + ram, "Видеоадаптер: " + gpu,
                 "Драйвер GPU: " + Query("SELECT DriverVersion FROM Win32_VideoController", "DriverVersion"), "",

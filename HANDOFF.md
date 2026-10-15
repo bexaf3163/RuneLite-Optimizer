@@ -1,3 +1,19 @@
+# 0.5.0 handoff — 2026-10-15
+
+OSRS Path is read-only: never modify its repo, launcher, package, plugin or settings. This project owns its telemetry agent and data directory only.
+
+New implementation: AutoTune.cs contains recommended profiles, quality ladder, per-phase acceptance, encrypted transaction/recovery and offline graphics writes. Guided.cs coordinates rounds, renderer identity, restart handshake, conditions and account-free reports. SessionWindow.cs has three preset buttons and a separate measured search. Standard mode explicitly cannot claim 60 FPS. Starter presets are for the detected i5-1135G7 / Iris Xe and are unmeasured.
+
+Only the three flags runelite.gpuplugin, runelite.hdplugin and fpscontrol.limitFps are newly allowed outside renderer groups. GPU/HD switching was explicitly requested by the user. Do not broaden this to other plugins. Offline writes use the existing Changes transaction and DPAPI backup; nullable Patch values remove originally absent settings for restoration. Both renderer configuration proxies are observed, including inactive installed HD. Missing HD requires Plugin Hub installation by the user.
+
+Protocol 2 adds the local active profile path and available renderers; the private path is not included in JSON reports. Matching profile path plus expected graphics is required after a new client generation. New generation during a measured phase aborts. Encrypted active-tune.bin supports restoring after an interrupted process; Original/Expected/Pending handles uncertain write completion. Changes to unrelated properties survive selective restore. Cloud sync may override disk changes and will fail the expected-settings handshake.
+
+The launcher helper reads an existing installed app.asar module unchanged. Never assign process.resourcesPath: Electron makes it read-only. Inspect-only module loading succeeded on the available unpacked OSRS Path, ASAR hash unchanged, no game launch requested. Java agent waits for the original bridge plugin and loads its own plugin with PluginManager, rather than replacing ExternalPluginManager's builtin list.
+
+Acceptance is conservative: every location/action must pass, not an average. Four locations x three phases per round. Search tries high to low quality, then repeats at 72 FPS. This is a finite preset search, not global optimization. Crowd tolerance is max(10 players, 50% of baseline). Changing time/weather/background load is not fully controlled.
+
+Run test.ps1. It includes original file-safety and telemetry tests; preset/renderer exclusivity, candidate selection, missing/slow/stalled/crowd rejection, restart profile guard and unset restore; companion token/Origin/input gates; portable and updater replacement/rollback; GUI renders at both sizes. Do not label synthetic fixtures as live-game measurements. Full game startup with the telemetry agent, automated graphics close/relaunch and real FPS are still not verified.
+
 # Handoff — 0.3.0 — 2026-10-15
 
 Independent from OSRS Path. No changes to its repo, launcher, plugin or user settings.

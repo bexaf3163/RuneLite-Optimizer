@@ -18,6 +18,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.ProfileManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.*;
@@ -37,7 +38,7 @@ public final class OptimizerTelemetryPlugin extends Plugin {
     private long lastSnapshot,cameraTravel,walkTravel;
     private Integer lastYaw;
     private WorldPoint previous;
-    private static final Set<String> KEYS=new HashSet<>(Arrays.asList("drawDistance","expandedMapLoadingChunks","unlockFps","fpsTarget","vsyncMode","antiAliasingMode","anisotropicFilteringLevel","detailDistance","shadowMode","sceneResolutionScale"));
+    private static final Set<String> KEYS=new HashSet<>(Arrays.asList("drawDistance","expandedMapLoadingChunks","unlockFps","fpsTarget","vsyncMode","antiAliasingMode","anisotropicFilteringLevel","detailDistance","shadowMode","sceneResolutionScale","shadowResolution","shadowFiltering","dynamicLights","normalMapping","groundTextures","parallaxOcclusionMappingToggle","expandShadowDraw","terrainShadows","enableShadowTransparency"));
     private String generation(){return session+"-"+revision;}
     @Override protected void startUp() throws Exception {
         token=System.getProperty("runelite.optimizer.token","");
@@ -82,12 +83,15 @@ public final class OptimizerTelemetryPlugin extends Plugin {
     @Subscribe public void onProfileChanged(ProfileChanged event){revision++;previous=null;lastYaw=null;}
     private void write(String key,Object value){String[] p=key.split("\\.",2);if(value==null)configs.unsetConfiguration(p[0],p[1]);else configs.setConfiguration(p[0],p[1],value.toString());}
     static boolean valid(String key,Object value){
-        String[] p=key.split("\\.",2);if(p.length!=2 || !(p[0].equals("gpu")||p[0].equals("hd")) || !KEYS.contains(p[1]) || (p[0].equals("gpu") && Arrays.asList("detailDistance","shadowMode","sceneResolutionScale").contains(p[1])))return false;
+        String[] p=key.split("\\.",2);if(p.length!=2 || !(p[0].equals("gpu")||p[0].equals("hd")) || !KEYS.contains(p[1]) || (p[0].equals("gpu") && Arrays.asList("detailDistance","shadowMode","sceneResolutionScale","shadowResolution","shadowFiltering","dynamicLights","normalMapping","groundTextures","parallaxOcclusionMappingToggle","expandShadowDraw","terrainShadows","enableShadowTransparency").contains(p[1])))return false;
         if(value==null)return true;if(!(value instanceof String))return false;String v=(String)value;
         switch(p[1]){
-            case "unlockFps":return v.equals("true")||v.equals("false");
+            case "normalMapping":case "groundTextures":case "parallaxOcclusionMappingToggle":case "expandShadowDraw":case "terrainShadows":case "enableShadowTransparency":case "unlockFps":return v.equals("true")||v.equals("false");
             case "vsyncMode":return Arrays.asList("OFF","ON","ADAPTIVE").contains(v);
             case "antiAliasingMode":return Arrays.asList("DISABLED","MSAA_2","MSAA_4","MSAA_8","MSAA_16").contains(v);
+            case "shadowResolution":return Arrays.asList("RES_1024","RES_2048","RES_4096","RES_8192","RES_16384","RES_32768").contains(v);
+            case "shadowFiltering":return Arrays.asList("NEAREST","SMOOTH_LOW","SMOOTH_HIGH","DITHERED_LOW","DITHERED_HIGH","PIXELATED","PCSS").contains(v);
+            case "dynamicLights":return Arrays.asList("NONE","FEW","SOME","MANY").contains(v);
             case "shadowMode":return Arrays.asList("OFF","FAST","DETAILED").contains(v);
             default:try{int n=Integer.parseInt(v);if(!Integer.toString(n).equals(v))return false;int min=p[1].equals("detailDistance")?25:p[1].equals("sceneResolutionScale")?1:0;int max=p[1].equals("fpsTarget")?999:p[1].equals("expandedMapLoadingChunks")?5:p[1].equals("anisotropicFilteringLevel")?16:p[1].equals("sceneResolutionScale")?200:184;return n>=min&&n<=max;}catch(NumberFormatException error){return false;}
         }
@@ -98,14 +102,23 @@ public final class OptimizerTelemetryPlugin extends Plugin {
         int yaw=client.getCameraYaw();if(lastYaw!=null){int d=Math.abs(yaw-lastYaw)%2048;cameraTravel+=Math.min(d,2048-d);}lastYaw=yaw;
         if(point!=null && previous!=null && point.getPlane()==previous.getPlane()){int d=Math.abs(point.getX()-previous.getX())+Math.abs(point.getY()-previous.getY());if(d<16)walkTravel+=d;}previous=point;
         long now=System.currentTimeMillis();if(now-lastSnapshot<250)return;lastSnapshot=now;
-        Map<String,Object> result=new LinkedHashMap<>();result.put("schema",1);result.put("pid",ProcessHandle.current().pid());result.put("generation",generation());result.put("timestamp",now);result.put("inGame",logged);result.put("world",client.getWorld());result.put("x",point==null?null:point.getX());result.put("y",point==null?null:point.getY());result.put("plane",point==null?null:point.getPlane());result.put("yaw",yaw);result.put("pitch",client.getCameraPitch());result.put("cameraTravel",cameraTravel);result.put("walkTravel",walkTravel);result.put("viewportWidth",client.getViewportWidth());result.put("viewportHeight",client.getViewportHeight());result.put("clientFps",client.getFPS());result.put("nearbyPlayers",client.getPlayers().size());
+        Map<String,Object> result=new LinkedHashMap<>();result.put("schema",2);result.put("pid",ProcessHandle.current().pid());result.put("generation",generation());result.put("timestamp",now);result.put("inGame",logged);result.put("world",client.getWorld());result.put("x",point==null?null:point.getX());result.put("y",point==null?null:point.getY());result.put("plane",point==null?null:point.getPlane());result.put("yaw",yaw);result.put("pitch",client.getCameraPitch());result.put("cameraTravel",cameraTravel);result.put("walkTravel",walkTravel);result.put("viewportWidth",client.getViewportWidth());result.put("viewportHeight",client.getViewportHeight());result.put("clientFps",client.getFPS());result.put("nearbyPlayers",client.getPlayers().size());
         Map<String,String> raw=new LinkedHashMap<>(),effective=new LinkedHashMap<>();String renderer="none";
+        List<String> available=new ArrayList<>();available.add("none");
         for(Plugin plugin:plugins.getPlugins()){
             String name=plugin.getClass().getName();String group=name.equals("rs117.hd.HdPlugin")?"hd":name.equals("net.runelite.client.plugins.gpu.GpuPlugin")?"gpu":null;
-            if(group==null||!plugins.isPluginActive(plugin))continue;if(!renderer.equals("none")){renderer="ambiguous";break;}renderer=group;
+            if(group==null)continue;available.add(group);
+            if(plugins.isPluginActive(plugin)){if(!renderer.equals("none"))renderer="ambiguous";else renderer=group;}
             for(String key:KEYS)if(valid(group+"."+key,null))raw.put(group+"."+key,configs.getConfiguration(group,key));
             try{Config proxy=plugins.getPluginConfigProxy(plugin);if(proxy!=null)for(Class<?> type:proxy.getClass().getInterfaces())for(Method method:type.getMethods()){ConfigItem item=method.getAnnotation(ConfigItem.class);if(item!=null&&KEYS.contains(item.keyName())){Object value=method.invoke(proxy);effective.put(group+"."+item.keyName(),value instanceof Enum?((Enum<?>)value).name():String.valueOf(value));}}}catch(Exception ignored){}
         }
-        raw.keySet().retainAll(effective.keySet());result.put("renderer",renderer);result.put("raw",raw);result.put("effective",effective);snapshot=gson.toJson(result);
+        raw.keySet().retainAll(effective.keySet());
+        for(String key:Arrays.asList("runelite.gpuplugin","runelite.hdplugin","fpscontrol.limitFps")){String[] parts=key.split("\\.",2);String v=configs.getConfiguration(parts[0],parts[1]);raw.put(key,v);effective.put(key,v==null?"false":v);}
+        if(renderer.equals("none")&&client.isGpu())renderer="unsupported";
+        if((renderer.equals("gpu")||renderer.equals("hd"))&&!client.isGpu())renderer="initializing";
+        result.put("availableRenderers",available);result.put("renderer",renderer);result.put("raw",raw);result.put("effective",effective);
+        // Local authenticated transport only. Never include this private path in benchmark reports.
+        if(configs.getProfile()!=null)result.put("configPath",ProfileManager.profileConfigFile(configs.getProfile()).getAbsolutePath());
+        snapshot=gson.toJson(result);
     }
 }
