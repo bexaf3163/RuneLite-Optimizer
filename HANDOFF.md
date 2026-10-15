@@ -1,3 +1,9 @@
+# 0.5.1 startup fix — 2026-10-15
+
+Root cause verified from private startup error classification and JAR directory entries: Framework ZipFile.CreateFromDirectory used backslashes, so Java rejected the manifest and exited before the game. Never use that API to create a JAR without normalizing entry names to '/'. build-companion.ps1 now creates entries explicitly, moves the test runner out of the package, and runs that runner with the packaged agent JAR as the actual classpath source. This catches the original Windows-specific packaging failure.
+
+GuideApi.Launch waits for fresh authenticated schema-2 telemetry. started/starting is a process-attempt signal only; running without optimizer telemetry asks the user to close the previous RuneLite. Early JVM failure classification reads a bounded local startup log but does not export raw logs. Launch errors persist in the UI. The launch button invokes the existing OSRS Path RuneLite module in Electron Node mode and does not open its main dashboard. OSRS Path remains untouched.
+
 # 0.5.0 handoff — 2026-10-15
 
 OSRS Path is read-only: never modify its repo, launcher, package, plugin or settings. This project owns its telemetry agent and data directory only.

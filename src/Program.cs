@@ -288,7 +288,7 @@ namespace RuneLiteOptimizer
             System.Threading.Thread.Sleep(1000);
             var after = Clients();
             double elapsed = stopwatch.Elapsed.TotalMilliseconds;
-            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.5.0", "",
+            var lines = new List<string> { "ДИАГНОСТИКА · RuneLite Optimizer 0.5.1", "",
                 "Windows: " + Environment.OSVersion.VersionString, "CPU: " + cpu.Trim(), "Логических процессоров: " + Environment.ProcessorCount,
                 "Оперативная память: " + ram, "Видеоадаптер: " + gpu,
                 "Драйвер GPU: " + Query("SELECT DriverVersion FROM Win32_VideoController", "DriverVersion"), "",

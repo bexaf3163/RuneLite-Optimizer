@@ -32,12 +32,26 @@ $classPath=((Get-ChildItem $lib -Filter '*.jar').FullName -join ';' )
 if($LASTEXITCODE -ne 0){throw 'Companion compilation failed'}
 & $javaRuntime -cp ($classes+';'+$classPath) com.runeliteoptimizer.CompanionTest
 if($LASTEXITCODE -ne 0){throw 'Companion safety tests failed'}
-Remove-Item -LiteralPath (Join-Path $classes 'com\runeliteoptimizer\CompanionTest.class')
+$testClasses=Join-Path $cache ('tests-'+[guid]::NewGuid().ToString('N'))
+$testPackage=Join-Path $testClasses 'com\runeliteoptimizer'
+New-Item -ItemType Directory -Force $testPackage | Out-Null
+Move-Item -LiteralPath (Join-Path $classes 'com\runeliteoptimizer\CompanionTest.class') -Destination $testPackage
 $meta=Join-Path $classes 'META-INF'
 New-Item -ItemType Directory $meta | Out-Null
 [IO.File]::WriteAllText((Join-Path $meta 'MANIFEST.MF'),"Manifest-Version: 1.0`r`nPremain-Class: com.runeliteoptimizer.OptimizerAgent`r`n`r`n",[Text.Encoding]::ASCII)
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
 $jar=Join-Path $cache 'OptimizerTelemetry.jar'
 if(Test-Path $jar){Remove-Item -LiteralPath $jar}
-[IO.Compression.ZipFile]::CreateFromDirectory($classes,$jar)
+# Framework ZipFile.CreateFromDirectory can emit Windows backslashes. JAR lookup
+# requires '/' even on Windows, including META-INF/MANIFEST.MF.
+$archive=[IO.Compression.ZipFile]::Open($jar,[IO.Compression.ZipArchiveMode]::Create)
+try {
+ foreach($item in Get-ChildItem -LiteralPath $classes -File -Recurse){
+  $entry=$item.FullName.Substring($classes.Length+1).Replace('\','/')
+  [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,$item.FullName,$entry) | Out-Null
+ }
+} finally {$archive.Dispose()}
+& $javaRuntime ('-javaagent:'+$jar) -cp ($testClasses+';'+$jar+';'+$classPath) com.runeliteoptimizer.CompanionTest --agent-smoke
+if($LASTEXITCODE -ne 0){throw 'Packaged Java agent startup failed'}
 Write-Output 'Independent telemetry companion compiled; no OSRS Path files changed.'

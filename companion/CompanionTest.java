@@ -20,5 +20,6 @@ public final class CompanionTest {
         try {check(request(port,"/telemetry","GET",null,null,null)==403,"Auth required");check(request(port,"/telemetry","GET",token,"http://example.com",null)==403,"Browser Origin rejected");check(request(port,"/telemetry","GET",token,null,null)==200,"Authenticated read");check(request(port,"/teleport","POST",token,null,"{}")==405,"No gameplay endpoint");check(request(port,"/configure","POST",token,null,"{}")==400,"Missing generation rejected");}
         finally{plugin.shutDown();}
         System.out.println("PASS: isolated companion validation, token/Origin gates and no gameplay endpoint.");
+        if(args.length==1&&args[0].equals("--agent-smoke"))System.exit(0);
     }
 }

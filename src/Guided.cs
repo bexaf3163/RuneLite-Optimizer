@@ -47,6 +47,7 @@ namespace RuneLiteOptimizer
         public static async Task<string> Launch(string application,bool inspect=false)
         {
             if(!File.Exists(application) || !application.EndsWith(".exe",StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Выберите установленный OSRS Path EXE.");
+            if(!inspect)try{var existing=await Read();if(existing.Fresh)return "RuneLite уже открыт, модуль оптимизатора подключён.";}catch(Exception){}
             string stage=Path.Combine(Folder,"launch-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
             string jar=Path.Combine(stage,"OptimizerTelemetry.jar"),script=Path.Combine(stage,"launcher.cjs"),result=Path.Combine(stage,"result.json"),request=Path.Combine(stage,"request.json");
             File.WriteAllBytes(jar,Portable.Resource("OptimizerTelemetry.jar"));File.WriteAllBytes(script,Portable.Resource("launcher.cjs"));
@@ -59,7 +60,21 @@ namespace RuneLiteOptimizer
             }
             var reply=new JavaScriptSerializer().Deserialize<Dictionary<string,object>>(File.ReadAllText(result));File.Delete(request);
             if(!reply.ContainsKey("ok")||!(bool)reply["ok"])throw new InvalidOperationException(reply.ContainsKey("message")?Convert.ToString(reply["message"]):"OSRS Path не смог запустить клиент. Проверьте его обычную кнопку запуска.");
-            return inspect?"Совместимый запуск подтверждён":"RuneLite запускается через установленный модуль OSRS Path. Нажмите Play в игре.";
+            if(inspect)return "Совместимый запуск подтверждён";
+            string state=reply.ContainsKey("state")?Convert.ToString(reply["state"]):"unknown";
+            if(!new[]{"started","starting","running"}.Contains(state))throw new InvalidOperationException("Модуль запуска не подтвердил старт клиента.");
+            var handshake=Stopwatch.StartNew();
+            while(handshake.Elapsed.TotalSeconds<(state=="running"?4:75))
+            {
+                try{var probe=await Read();if(probe.Fresh)return "RuneLite и модуль оптимизатора подключены. Нажмите Play, если ещё не вошли в игру.";}catch(Exception){}
+                if(StartupFailed(Path.Combine(stage,"private-launch.log")))throw new InvalidOperationException("Java завершилась при загрузке модуля оптимизатора. Игра не запущена. Обновите оптимизатор и повторите запуск.");
+                await Task.Delay(700);
+            }
+            throw new InvalidOperationException(state=="running"?"RuneLite уже открыт без совместимого модуля оптимизатора. Закройте RuneLite и нажмите «Запустить игру» снова.":"Подключение к RuneLite не подтверждено. Если клиент открыт, дождитесь его загрузки. При повторной попытке сначала закройте клиент. Настройки графики не подтверждены и замеры не начаты.");
+        }
+        public static bool StartupFailed(string log)
+        {
+            try{using(var input=new FileStream(log,FileMode.Open,FileAccess.Read,FileShare.ReadWrite))using(var reader=new StreamReader(input)){char[] buffer=new char[32768];int count=reader.Read(buffer,0,buffer.Length);string value=new string(buffer,0,count);return value.Contains("Error occurred during initialization of VM")||value.Contains("Error opening zip file or JAR manifest missing");}}catch{return false;}
         }
     }
     public sealed class BenchmarkPlace

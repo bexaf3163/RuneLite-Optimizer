@@ -145,6 +145,8 @@ namespace RuneLiteOptimizer
             bool blocked=false;try{engine.Reconnected(probe);}catch(InvalidOperationException){blocked=true;}if(!blocked)throw new Exception("Restart profile guard");
             probe.configPath="fixture-profile";engine.Reconnected(probe);if(engine.Generation!="new-session"||engine.NeedsApply||engine.WaitingForRestart)throw new Exception("Expected restart not accepted");
             sample[11].comparable=false;if(AutoQuality.Pass(sample,false))throw new Exception("Changed crowd accepted");
+            string launchLog=System.IO.Path.Combine(Environment.CurrentDirectory,"launcher-fixture.log");
+            try{File.WriteAllText(launchLog,"Error opening zip file or JAR manifest missing : fixture.jar\nError occurred during initialization of VM");if(!GuideApi.StartupFailed(launchLog))throw new Exception("Java startup failure not detected");File.WriteAllText(launchLog,"Normal initialization; benchmark has not started.");if(GuideApi.StartupFailed(launchLog))throw new Exception("Normal startup falsely rejected");}finally{if(File.Exists(launchLog))File.Delete(launchLog);}
             File.WriteAllText("autotune-test-result.txt","PASS: three recommended presets; renderer exclusivity; candidate selection and offline transition; incomplete/stalled/low-percentile/crowd rejection; final and software no-false-success; restart profile guard; selective unset and conflict preservation. Synthetic fixtures only.");
         }
     }
